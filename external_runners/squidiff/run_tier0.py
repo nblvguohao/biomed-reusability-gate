@@ -8,7 +8,6 @@ import time
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 
 def run_tier0(data_path: Path, output_dir: Path, seed: int = 13) -> dict:
@@ -75,13 +74,13 @@ def run_tier0(data_path: Path, output_dir: Path, seed: int = 13) -> dict:
     print(f"Feature matrix: train {train_mat.shape}, test {test_mat.shape}")
 
     # ── Baseline 1: Last Observation ──
+    from reuse_gate.metrics.distribution import energy_distance_multivariate
+    from reuse_gate.metrics.regression import regression_metrics
     from reuse_gate.models.temporal_baselines import (
         conditional_mean_sampler,
         last_observation,
         linear_interpolation,
     )
-    from reuse_gate.metrics.distribution import energy_distance_multivariate
-    from reuse_gate.metrics.regression import regression_metrics
 
     t1 = time.time()
     pred_lastobs = last_observation(train_mat, test_mat)
@@ -193,7 +192,7 @@ def run_tier0(data_path: Path, output_dir: Path, seed: int = 13) -> dict:
     results["n_cells_total"] = int(adata.n_obs)
     results["n_genes_total"] = int(adata.n_vars)
 
-    print(f"\n=== Tier 0 Summary ===")
+    print("\n=== Tier 0 Summary ===")
     print(f"Cells: {results['n_cells_total']}, Genes: {results['n_genes_total']}")
     print(f"Split: {results['split']['train_n_cells']} train / {results['split']['test_n_cells']} test")
     for name, passed in go_conditions:

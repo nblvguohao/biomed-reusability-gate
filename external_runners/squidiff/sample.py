@@ -21,9 +21,9 @@ def run_sample(
     Returns a dict with status, predictions_path, metrics, error.
     """
     try:
+        import anndata as ad
         import numpy as np
         import torch
-        import anndata as ad
 
         # Load model checkpoint
         checkpoint = torch.load(model_path, map_location="cpu", weights_only=False)

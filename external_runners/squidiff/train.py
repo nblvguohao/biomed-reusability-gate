@@ -25,10 +25,8 @@ def run_train(
     Returns a dict with status, model_path, metrics, error.
     """
     try:
-        import numpy as np
-        import torch
         import anndata as ad
-
+        import torch
         from Squidiff.script_util import create_model_and_diffusion
 
         # Load training data
