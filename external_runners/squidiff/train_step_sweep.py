@@ -35,6 +35,7 @@ def run_sweep(
     diffusion_steps: int = 100,
     batch_size: int = 64,
     seed: int = 13,
+    log_normalize: bool = True,
 ) -> dict:
     """Train one model per step count and evaluate each identically."""
     from reuse_gate.metrics.distribution import energy_distance_multivariate
@@ -52,7 +53,9 @@ def run_sweep(
     print("=" * 60)
     print("Preparing split (identical for every step count)")
     print("=" * 60)
-    split_info = prepare_train_data(combined_path, output_root, n_genes=n_genes)
+    split_info = prepare_train_data(
+        combined_path, output_root, n_genes=n_genes, log_normalize=log_normalize
+    )
 
     train_mat = split_info["train_mat"]
     test_mat = split_info["test_mat"]
@@ -69,6 +72,7 @@ def run_sweep(
         "n_genes": n_genes,
         "diffusion_steps": diffusion_steps,
         "batch_size": batch_size,
+        "log_normalize": log_normalize,
         "split": {k: v for k, v in split_info.items() if k not in ("train_mat", "test_mat")},
         "baselines": baselines,
         "sweep": [],
@@ -185,5 +189,8 @@ if __name__ == "__main__":
     else:
         steps_list = [5000, 20000, 50000]
     seed_arg = int(sys.argv[3]) if len(sys.argv) > 3 else 13
+    lognorm = sys.argv[4].lower() not in ("0", "false", "no") if len(sys.argv) > 4 else True
 
-    run_sweep(output_root=out, step_counts=steps_list, seed=seed_arg)
+    run_sweep(
+        output_root=out, step_counts=steps_list, seed=seed_arg, log_normalize=lognorm
+    )

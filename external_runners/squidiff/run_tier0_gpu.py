@@ -126,12 +126,35 @@ def ensure_combined_adata(raw_dir: Path, output_path: Path) -> Path:
     return output_path
 
 
-def prepare_train_data(adata_path: Path, output_dir: Path, n_genes: int = 500) -> dict:
-    """Create temporal split and prepare Squidiff-compatible training data."""
+def prepare_train_data(
+    adata_path: Path,
+    output_dir: Path,
+    n_genes: int = 500,
+    log_normalize: bool = True,
+) -> dict:
+    """Create temporal split and prepare Squidiff-compatible training data.
+
+    `log_normalize` reproduces the preprocessing used in the upstream
+    reproducibility notebooks (`sc.pp.normalize_total(target_sum=1e4)` followed
+    by `sc.pp.log1p`), which the released examples apply before training. Both
+    steps act per cell or elementwise, so neither carries information across the
+    train/test boundary. Feature selection remains fitted on training cells only.
+
+    Set it to False only to reproduce the raw-count behaviour of earlier runs.
+    """
     import anndata as ad
+    import scanpy as sc
 
     adata = ad.read_h5ad(adata_path)
     print(f"Loaded: {adata.n_obs} cells × {adata.n_vars} genes")
+
+    if log_normalize:
+        adata.layers["counts"] = adata.X.copy()
+        sc.pp.normalize_total(adata, target_sum=1e4)
+        sc.pp.log1p(adata)
+        print("Preprocessing: normalize_total(1e4) + log1p (per upstream notebooks)")
+    else:
+        print("Preprocessing: none (raw counts)")
 
     # Temporal split
     train_mask = adata.obs["timepoint_numeric"].isin([0, 7, 14])
