@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import anndata as ad
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 
 # Required obs columns for each contract per the plan
 LONGITUDINAL_REQUIRED_OBS = [
