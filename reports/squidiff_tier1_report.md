@@ -137,6 +137,21 @@ GSE221552 would provide human CAR-NK engineering validation (CAR33-KLRC1ko vs CA
 
 ---
 
+## 10.5 Figures
+
+| Figure | Description | Path |
+|--------|-------------|------|
+| Fig 1 | Data and split design | `artifacts/squidiff_tier1/figures/fig1_split_design.pdf` |
+| Fig 2 | Official reproduction (Squidiff smoke & baselines) | `artifacts/squidiff_tier1/figures/fig2_official_reproduction.pdf` |
+| Fig 3 | Early-to-late CAR-NK prediction (25 experiments) | `artifacts/squidiff_tier1/figures/fig3_temporal_prediction.pdf` |
+| Fig 4 | State-proportion recovery & DE agreement | `artifacts/squidiff_tier1/figures/fig4_state_proportions.pdf` |
+| Fig 5 | Construct/stimulation shift (CAR19 vs CAR19/IL15) | `artifacts/squidiff_tier1/figures/fig5_construct_shift.pdf` |
+| Fig 6 | Resource & sensitivity analysis | `artifacts/squidiff_tier1/figures/fig6_resources.pdf` |
+
+All figures are available in both PDF (vector) and PNG formats. Source data for each figure is in `artifacts/squidiff_tier1/source_data/figure_source_data.json`.
+
+---
+
 ## 11. Conclusions
 
 Squidiff is a **reusable and reproducible** method for predicting CAR-NK cell state dynamics. The Tier 0/Tier 1 evaluation demonstrates:
