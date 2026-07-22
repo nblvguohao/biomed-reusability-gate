@@ -47,6 +47,15 @@ workflows/               # Snakemake workflow
 ## Common commands
 
 ```bash
+# Option A: Python 3.10 venv with CUDA torch (recommended for GPU)
+python -m venv --system-site-packages .venv310
+.venv310\Scripts\activate
+pip install -e ".[metrics,dev]"
+
+# Option B: Python 3.11 with uv (CPU-only by default)
+uv venv --python 3.11
+uv sync --extra torch --extra metrics --extra dev
+
 make setup             # Create venv and install
 make lint              # Ruff check
 make typecheck         # Mypy
@@ -54,6 +63,15 @@ make test              # Unit tests
 make smoke             # Fast tests only (no integration/gpu/slow)
 make inventory         # Record environment
 make decide            # Candidate selection
+```
+
+## Setup for CUDA GPU
+
+Use Python 3.10 with `--system-site-packages` to inherit system CUDA torch:
+```bash
+python -m venv --system-site-packages .venv310
+.venv310\Scripts\activate
+pip install -e ".[metrics,dev]"
 ```
 
 ## Commit style
