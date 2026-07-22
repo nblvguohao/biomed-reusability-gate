@@ -11,7 +11,7 @@
 
 - [x] **Task 1:** Scaffold the typed repository
 - [x] **Task 2:** Environment and hardware inventory
-- [ ] **Task 3:** Checksum-verified data and upstream manifests
+- [x] **Task 3:** Checksum-verified data and upstream manifests
 - [ ] **Task 4:** Common AnnData and spatial-pair contracts
 - [ ] **Task 5:** Group split and leakage audit
 - [ ] **Task 6:** External container runner
