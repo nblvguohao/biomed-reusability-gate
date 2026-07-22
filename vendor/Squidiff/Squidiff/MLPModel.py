@@ -194,6 +194,8 @@ class EncoderMLPModel(nn.Module):
     def forward(self, x_start, label=None, drug_dose=None, control_feature = None):
         
         if label is not None:
+            if label.dim() == 1:
+                label = label.unsqueeze(1)
             label_emb = self.label_embed(label)
             x_start = th.concat([x_start,label_emb],axis=1)
         
