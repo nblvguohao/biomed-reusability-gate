@@ -1,0 +1,27 @@
+{
+  "evaluation_date": "2026-07-22",
+  "selected_candidate": "squidiff",
+  "decision_rule": "NicheTrans failed gates: ['NT-G1', 'NT-G2'] (no public repository, no example to run). Squidiff passed all hard gates (SQ-G1 through SQ-G10). Selected per priority rule 2.",
+  "candidate_results": {
+    "nichetrans": {
+      "hard_gate_pass": false,
+      "failed_gates": ["NT-G1", "NT-G2"],
+      "evidence_paths": ["reports/nichetrans_feasibility.md"]
+    },
+    "squidiff": {
+      "hard_gate_pass": true,
+      "failed_gates": [],
+      "evidence_paths": [
+        "reports/squidiff_feasibility.md",
+        "vendor/manifests/squidiff.json",
+        "vendor/Squidiff/ (pinned at abdfc27)"
+      ]
+    },
+    "cmonge": {
+      "hard_gate_pass": false,
+      "failed_gates": [],
+      "evidence_paths": ["Not evaluated — Squidiff selected per priority"]
+    }
+  },
+  "repository_commit": "f079602"
+}

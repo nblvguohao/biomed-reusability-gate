@@ -12,21 +12,21 @@
 - [x] **Task 1:** Scaffold the typed repository
 - [x] **Task 2:** Environment and hardware inventory
 - [x] **Task 3:** Checksum-verified data and upstream manifests
-- [ ] **Task 4:** Common AnnData and spatial-pair contracts
-- [ ] **Task 5:** Group split and leakage audit
-- [ ] **Task 6:** External container runner
-- [ ] **Task 7:** Common metrics and biological-group bootstrap
-- [ ] **Task 8:** Candidate gate engine
+- [x] **Task 4:** Common AnnData and spatial-pair contracts
+- [x] **Task 5:** Group split and leakage audit
+- [x] **Task 6:** External container runner
+- [x] **Task 7:** Common metrics and biological-group bootstrap
+- [x] **Task 8:** Candidate gate engine
 
 ### NicheTrans Feasibility (always evaluated first)
 
-- [ ] **Task 9:** Pin and reproduce NicheTrans official smoke example
-- [ ] **Task 10:** Gastric spatial data profiler and registration audit
-- [ ] **Task 11:** NicheTrans simple baselines and reduced-data GPU smoke
+- [x] **Task 9:** ~~NicheTrans smoke~~ — SKIPPED (NT-G1/NT-G2 failed, no public repo)
+- [x] **Task 10:** ~~Gastric spatial profiling~~ — SKIPPED (NicheTrans blocked)
+- [x] **Task 11:** ~~NicheTrans baselines~~ — SKIPPED (NicheTrans blocked)
 
 ### Squidiff Feasibility (only if NicheTrans fails)
 
-- [ ] **Task 12:** Pin and reproduce Squidiff official smoke example
+- [x] **Task 12:** Pin and reproduce Squidiff official smoke example
 - [ ] **Task 13:** Parse and audit CAR-NK longitudinal data
 - [ ] **Task 14:** Temporal baselines and reduced Squidiff run
 
@@ -38,7 +38,7 @@
 
 ### Candidate Selection
 
-- [ ] **Task 18:** Deterministic decision engine — write `reports/selection_decision.json`
+- [x] **Task 18:** Deterministic decision engine — `reports/selection_decision.json` written
 
 ---
 
