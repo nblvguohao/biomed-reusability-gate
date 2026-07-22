@@ -9,7 +9,7 @@
 
 ### Common Tasks
 
-- [ ] **Task 1:** Scaffold the typed repository
+- [x] **Task 1:** Scaffold the typed repository
 - [ ] **Task 2:** Environment and hardware inventory
 - [ ] **Task 3:** Checksum-verified data and upstream manifests
 - [ ] **Task 4:** Common AnnData and spatial-pair contracts
@@ -70,15 +70,16 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | PENDING |
-| **Started** | — |
-| **RED test command** | — |
-| **RED failure reason** | — |
-| **GREEN test command** | — |
-| **Generated files** | — |
-| **Data/upstream checksum** | — |
-| **Git commit SHA** | — |
-| **Unresolved risks** | — |
+| **Status** | ✅ COMPLETED |
+| **Started** | 2026-07-22 17:14 |
+| **RED test command** | `.venv\Scripts\python.exe -m pytest tests/unit/test_schemas.py -v` |
+| **RED failure reason** | `ModuleNotFoundError: No module named 'reuse_gate.schemas'` |
+| **GREEN test command** | `.venv\Scripts\python.exe -m pytest tests/unit/test_schemas.py -v` |
+| **GREEN result** | 4 passed in 0.24s |
+| **Generated files** | `pyproject.toml`, `Makefile`, `.gitignore`, `CLAUDE.md`, `src/reuse_gate/__init__.py`, `src/reuse_gate/cli.py`, `src/reuse_gate/schemas.py`, `tests/conftest.py`, `tests/unit/test_schemas.py`, `uv.lock` |
+| **Data/upstream checksum** | N/A |
+| **Git commit SHA** | `b1fd81b` |
+| **Unresolved risks** | Windows LF→CRLF warnings; uv run spawns different resolver than uv pip install |
 
 ### Task 2: Environment and hardware inventory
 
