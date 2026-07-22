@@ -47,14 +47,14 @@ def test_run_id_changes_with_seed():
 
 def test_run_id_is_deterministic():
     """Same inputs must produce same run ID."""
-    kwargs = dict(
-        candidate="squidiff",
-        dataset_checksum="abc123",
-        split_id="split_01",
-        seed=13,
-        git_commit="abc",
-        container_digest="sha256:xyz",
-    )
+    kwargs = {
+        "candidate": "squidiff",
+        "dataset_checksum": "abc123",
+        "split_id": "split_01",
+        "seed": 13,
+        "git_commit": "abc",
+        "container_digest": "sha256:xyz",
+    }
     assert generate_run_id(**kwargs) == generate_run_id(**kwargs)
 
 

@@ -1,4 +1,4 @@
-# Reusability report: Output scale calibration limits a conditional diffusion model of single-cell dynamics
+# Reusability report: A correctable calibration defect masks learned structure in a single-cell diffusion model
 
 *Linked article: He et al., Squidiff: predicting cellular development and responses to perturbations using a diffusion model. Nature Methods (2025). https://doi.org/10.1038/s41592-025-02877-y*
 

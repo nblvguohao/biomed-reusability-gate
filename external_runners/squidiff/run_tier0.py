@@ -184,7 +184,7 @@ def run_tier0(data_path: Path, output_dir: Path, seed: int = 13) -> dict:
 
     results["tier0_go"] = {
         "all_pass": all(p for _, p in go_conditions),
-        "conditions": {name: passed for name, passed in go_conditions},
+        "conditions": dict(go_conditions),
     }
 
     # ── Summary ──

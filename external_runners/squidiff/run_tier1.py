@@ -136,7 +136,6 @@ def run_tier1(data_path: Path, output_dir: Path) -> dict:
 
     # ── Per-seed experiments ──
     for seed in SEEDS:
-        rng = np.random.RandomState(seed)
         seed_results: dict = {"seed": seed, "splits": []}
 
         # Leave-one-sample-out: iterate over test-timepoint samples

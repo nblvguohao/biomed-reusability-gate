@@ -79,7 +79,6 @@ def build_anndata_from_mtx(raw_dir: Path, output_path: Path) -> Path:
     """
     try:
         import anndata as ad
-        import scanpy as sc
     except ImportError:
         print("anndata/scanpy not available; cannot build AnnData")
         return output_path

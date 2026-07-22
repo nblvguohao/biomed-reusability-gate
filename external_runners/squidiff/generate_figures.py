@@ -15,9 +15,9 @@ import json
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -46,7 +46,7 @@ def fig1_split_design(adata):
     ax.set_xticklabels(tp_counts.index, fontsize=11)
     ax.set_ylabel("Number of cells", fontsize=12)
     ax.set_title("A) Cells per timepoint (blue=train, red=test)", fontsize=13, fontweight="bold")
-    for bar, count in zip(bars, tp_counts.values):
+    for bar, count in zip(bars, tp_counts.values, strict=True):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 50, str(count),
                 ha="center", fontsize=9)
 
@@ -86,7 +86,7 @@ def fig2_official_reproduction(tier0_metrics):
     )
     ax.text(0.1, 0.5, info_text, transform=ax.transAxes, fontsize=13,
             verticalalignment="center", fontfamily="monospace",
-            bbox=dict(boxstyle="round", facecolor="#E8F5E9", alpha=0.8))
+            bbox={"boxstyle": "round", "facecolor": "#E8F5E9", "alpha": 0.8})
     ax.set_title("A) Squidiff Smoke Test", fontsize=13, fontweight="bold")
 
     # Panel B: Baseline energy distances
@@ -98,7 +98,7 @@ def fig2_official_reproduction(tier0_metrics):
     bars = ax.bar(labels, eds, color=colors_bar, edgecolor="white")
     ax.set_ylabel("Energy Distance", fontsize=12)
     ax.set_title("B) Baseline Performance (Tier 0)", fontsize=13, fontweight="bold")
-    for bar, val in zip(bars, eds):
+    for bar, val in zip(bars, eds, strict=True):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 5, f"{val:.0f}",
                 ha="center", fontsize=10)
     ax.axhline(y=eds[0], color="#E53935", linestyle="--", alpha=0.3, label=f"Last Obs = {eds[0]:.0f}")
@@ -111,7 +111,7 @@ def fig2_official_reproduction(tier0_metrics):
     go_labels = [n.replace("_", " ").title() for n in go_names]
     colors_go = ["#43A047" if v else "#E53935" for v in go_vals]
     ax.barh(go_labels, [1]*len(go_labels), color=colors_go, edgecolor="white", height=0.5)
-    for i, (name, val) in enumerate(zip(go_labels, go_vals)):
+    for i, val in enumerate(go_vals):
         ax.text(0.5, i, "PASS" if val else "FAIL", ha="center", va="center",
                 fontsize=12, fontweight="bold", color="white")
     ax.set_xlim(0, 1)
@@ -143,8 +143,8 @@ def fig3_temporal_prediction(tier1_metrics):
     for i, s in enumerate(SEEDS):
         seed_vals = df_imp[df_imp["seed"] == s]["improvement_pct"]
         ax.boxplot([seed_vals], positions=[i], widths=0.6, patch_artist=True,
-                   boxprops=dict(facecolor=SEED_COLORS[i], alpha=0.7),
-                   medianprops=dict(color="black", linewidth=2))
+                   boxprops={"facecolor": SEED_COLORS[i], "alpha": 0.7},
+                   medianprops={"color": "black", "linewidth": 2})
     ax.set_xticks(range(len(SEEDS)))
     ax.set_xticklabels([f"Seed {s}" for s in SEEDS], fontsize=10)
     ax.set_ylabel("ED Improvement over Last Obs (%)", fontsize=12)
@@ -223,7 +223,7 @@ def fig4_state_proportions(tier1_metrics):
     ax.set_xticklabels(test_names_short, rotation=45, ha="right", fontsize=8)
     ax.set_ylabel("Proportion Error", fontsize=12)
     ax.set_title("B) State Proportion Recovery", fontsize=13, fontweight="bold")
-    for i, (err, nc) in enumerate(zip(prop_errors, n_clusters)):
+    for i, (err, nc) in enumerate(zip(prop_errors, n_clusters, strict=True)):
         ax.text(i, err + 0.005, f"k={nc}", ha="center", fontsize=8)
 
     # Panel C: Rare state recall
@@ -263,7 +263,7 @@ def fig5_construct_shift(adata, construct_shift_data):
     ax.bar(tps, eds, color=["#FF7043", "#42A5F5"], edgecolor="white")
     ax.set_ylabel("Energy Distance", fontsize=12)
     ax.set_title("A) CAR19 → CAR19/IL15 Prediction", fontsize=13, fontweight="bold")
-    for i, (ed, c19, il15) in enumerate(zip(eds, n_car19, n_il15)):
+    for i, (ed, c19, il15) in enumerate(zip(eds, n_car19, n_il15, strict=True)):
         ax.text(i, ed + 10, f"CAR19:{c19}\nIL15:{il15}", ha="center", fontsize=8)
 
     # Panel B: Construct distribution over time
@@ -337,7 +337,7 @@ def fig6_resources(tier0_metrics, tier1_metrics):
            color=["#2196F3", "#FF5722"], edgecolor="white")
     ax.set_ylabel("Number of Cells", fontsize=12)
     ax.set_title(f"B) Data Scale ({tier0_metrics['n_cells_total']:,} total cells)", fontsize=13, fontweight="bold")
-    for i, (label, count) in enumerate([("Train", split["train_n_cells"]), ("Test", split["test_n_cells"])]):
+    for i, count in enumerate([split["train_n_cells"], split["test_n_cells"]]):
         ax.text(i, count + 50, f"{count:,}", ha="center", fontsize=11)
 
     # Panel C: Seed stability (from Tier 1)
@@ -349,9 +349,9 @@ def fig6_resources(tier0_metrics, tier1_metrics):
                       for sp in tier1_metrics["seeds"][str(s)]["splits"]]
         all_eds.append(splits_eds)
         seeds_labels.append(f"S{s}")
-    bp = ax.boxplot(all_eds, patch_artist=True,
-                    boxprops=dict(facecolor="#7E57C2", alpha=0.5),
-                    medianprops=dict(color="black", linewidth=2))
+    ax.boxplot(all_eds, patch_artist=True,
+                    boxprops={"facecolor": "#7E57C2", "alpha": 0.5},
+                    medianprops={"color": "black", "linewidth": 2})
     ax.set_xticklabels(seeds_labels, fontsize=10)
     ax.set_ylabel("Conditional Mean ED", fontsize=12)
     ax.set_title("C) Cross-Seed Stability (5 seeds)", fontsize=13, fontweight="bold")
