@@ -27,8 +27,8 @@
 ### Squidiff Feasibility (only if NicheTrans fails)
 
 - [x] **Task 12:** Pin and reproduce Squidiff official smoke example
-- [ ] **Task 13:** Parse and audit CAR-NK longitudinal data
-- [ ] **Task 14:** Temporal baselines and reduced Squidiff run
+- [x] **Task 13:** Parse and audit CAR-NK longitudinal data
+- [x] **Task 14:** Temporal baselines and reduced Squidiff run
 
 ### CMonge Feasibility (only if both NicheTrans and Squidiff fail)
 
