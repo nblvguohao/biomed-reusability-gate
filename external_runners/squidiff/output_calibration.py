@@ -53,6 +53,39 @@ def shuffle_within_features(
     return out
 
 
+def rare_state_recall(
+    samples: np.ndarray, test: np.ndarray, threshold_pct: float = 10.0, seed: int = 13
+) -> dict:
+    """Fraction of each rare test cluster's mass that the samples reproduce.
+
+    Clusters are fitted on the real test cells; a cluster holding less than
+    `threshold_pct` of them counts as rare. Samples are then assigned to those
+    fixed centroids and recall is the per-cluster proportion ratio, capped at 1.
+
+    Kept identical to the Tier 1 definition so the numbers stay comparable.
+    """
+    from sklearn.cluster import KMeans
+
+    n_clusters = min(5, test.shape[0] // 50)
+    if n_clusters < 2:
+        return {"error": "too_few_cells"}
+
+    km = KMeans(n_clusters=n_clusters, random_state=seed, n_init=10)
+    real_labels = km.fit_predict(test)
+    props = np.bincount(real_labels, minlength=n_clusters) / len(real_labels)
+    rare = np.where(props < threshold_pct / 100)[0]
+    if len(rare) == 0:
+        return {"rare_clusters_found": 0, "mean_recall": 1.0}
+
+    pred_props = np.bincount(km.predict(samples), minlength=n_clusters) / len(samples)
+    recalls = [min(pred_props[c] / max(props[c], 1e-8), 1.0) for c in rare]
+    return {
+        "rare_clusters_found": int(len(rare)),
+        "threshold_pct": threshold_pct,
+        "mean_recall": round(float(np.mean(recalls)), 4),
+    }
+
+
 def run(sweep_dir: Path, step_counts: list[int], seed: int = 13) -> dict:
     import anndata as ad
 
@@ -68,12 +101,14 @@ def run(sweep_dir: Path, step_counts: list[int], seed: int = 13) -> dict:
         train, n_samples=test.shape[0], rng=np.random.RandomState(seed)
     )
     baseline_ed = float(energy_distance_multivariate(test, baseline))
+    baseline_rare = rare_state_recall(baseline, test, seed=seed)
 
     results: dict = {
         "seed": seed,
         "test_moments": {"mean": float(test.mean()), "std": float(test.std())},
         "train_moments": {"mean": float(train.mean()), "std": float(train.std())},
         "conditional_mean_ed": baseline_ed,
+        "conditional_mean_rare_state_recall": baseline_rare,
         "steps": [],
     }
 
@@ -100,6 +135,8 @@ def run(sweep_dir: Path, step_counts: list[int], seed: int = 13) -> dict:
             "marginals_preserved_by_shuffle": bool(
                 np.allclose(np.sort(rescaled, axis=0), np.sort(shuffled, axis=0))
             ),
+            "rare_state_recall_raw": rare_state_recall(raw, test, seed=seed),
+            "rare_state_recall_rescaled": rare_state_recall(rescaled, test, seed=seed),
         }
         results["steps"].append(entry)
         print(
@@ -107,8 +144,16 @@ def run(sweep_dir: Path, step_counts: list[int], seed: int = 13) -> dict:
             f"{entry['ed_shuffled']:>9.2f} | {entry['generated_mean']:>9.3f} | {entry['generated_std']:>8.3f}"
         )
 
-    print(f"\n  conditional-mean baseline: {baseline_ed:.2f}")
+    print(f"\n  conditional-mean baseline: ED {baseline_ed:.2f}, "
+          f"rare-state recall {baseline_rare.get('mean_recall')}")
     print(f"  real test moments:         mean {test.mean():.3f}, std {test.std():.3f}")
+    print()
+    print("  rare-state recall (same pooled test set):")
+    for e in results["steps"]:
+        print(
+            f"    {e['steps']:>6} steps   raw {e['rare_state_recall_raw'].get('mean_recall')}"
+            f"   rescaled {e['rare_state_recall_rescaled'].get('mean_recall')}"
+        )
 
     if results["steps"]:
         best = min(results["steps"], key=lambda e: e["ed_rescaled"])
