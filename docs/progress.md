@@ -10,7 +10,7 @@
 ### Common Tasks
 
 - [x] **Task 1:** Scaffold the typed repository
-- [ ] **Task 2:** Environment and hardware inventory
+- [x] **Task 2:** Environment and hardware inventory
 - [ ] **Task 3:** Checksum-verified data and upstream manifests
 - [ ] **Task 4:** Common AnnData and spatial-pair contracts
 - [ ] **Task 5:** Group split and leakage audit
@@ -85,14 +85,15 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | IN PROGRESS |
+| **Status** | ✅ COMPLETED |
 | **Started** | 2026-07-22 17:13 |
-| **RED test command** | — |
-| **RED failure reason** | — |
-| **GREEN test command** | — |
-| **Generated files** | `reports/environment_inventory.md` |
-| **Data/upstream checksum** | — |
-| **Git commit SHA** | — |
-| **Unresolved risks** | No Docker/Apptainer; Python 3.8 current, needs 3.11 |
+| **RED test command** | `.venv\Scripts\python.exe -m pytest tests/unit/test_provenance.py -v` |
+| **RED failure reason** | `ModuleNotFoundError: No module named 'reuse_gate.provenance'` |
+| **GREEN test command** | `.venv\Scripts\python.exe -m pytest tests/unit/test_provenance.py -v` |
+| **GREEN result** | 3 passed in 0.45s |
+| **Generated files** | `src/reuse_gate/provenance.py`, `tests/unit/test_provenance.py`, `reports/environment_inventory.md` |
+| **Data/upstream checksum** | N/A |
+| **Git commit SHA** | `905f69d` |
+| **Unresolved risks** | No Docker/Apptainer (container gate flags set to False); Windows ctypes RAM detection may fail on non-Windows |
 
 ---
