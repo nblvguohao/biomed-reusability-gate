@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
+import numpy.typing as npt
 
 
-def regression_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
+def regression_metrics(
+    y_true: npt.NDArray[Any], y_pred: npt.NDArray[Any]
+) -> dict[str, float]:
     """Compute MAE and R² (feature-wise then averaged).
 
     Args:

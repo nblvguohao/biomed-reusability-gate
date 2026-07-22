@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
+import numpy.typing as npt
 from scipy.spatial.distance import cdist
 
 
-def energy_distance_multivariate(x: np.ndarray, y: np.ndarray) -> float:
+def energy_distance_multivariate(x: npt.NDArray[Any], y: npt.NDArray[Any]) -> float:
     """Compute the multivariate energy distance between two sample sets.
 
     E(x, y) = 2 * mean(||x_i - y_j||) - mean(||x_i - x_j||) - mean(||y_i - y_j||)

@@ -25,7 +25,6 @@ def ensure_combined_adata(raw_dir: Path, output_path: Path) -> Path:
 
     import anndata as ad
     import pandas as pd
-    import scanpy as sc
     from scipy.io import mmread
     from scipy.sparse import issparse
 
@@ -338,7 +337,7 @@ def train_squidiff_gpu(
         "diffusion_steps": diffusion_steps,
         "class_cond": class_cond,
         "device": str(device),
-        "losses": [float(l.detach().cpu().numpy()) for l in train_loop.loss_list[-10:]],
+        "losses": [float(loss.detach().cpu().numpy()) for loss in train_loop.loss_list[-10:]],
     }
 
 
@@ -602,7 +601,7 @@ def run_tier0_gpu(
 
     results["tier0_go"] = {
         "all_pass": all(p for _, p in conditions),
-        "conditions": {name: passed for name, passed in conditions},
+        "conditions": dict(conditions),
     }
 
     for name, passed in conditions:

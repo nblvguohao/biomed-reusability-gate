@@ -6,10 +6,15 @@ early stopping, normalization, or feature selection.
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
+import numpy.typing as npt
 
 
-def last_observation(train: np.ndarray, test: np.ndarray) -> np.ndarray:
+def last_observation(
+    train: npt.NDArray[Any], test: npt.NDArray[Any]
+) -> npt.NDArray[np.float64]:
     """Predict the training mean for every test cell.
 
     This represents the simplest baseline: the most recent observed state
@@ -22,10 +27,10 @@ def last_observation(train: np.ndarray, test: np.ndarray) -> np.ndarray:
 
 
 def conditional_mean_sampler(
-    train: np.ndarray,
+    train: npt.NDArray[Any],
     n_samples: int,
     rng: np.random.RandomState | None = None,
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """Sample from a Gaussian centered at the training mean with train variance.
 
     Adds diagonal Gaussian noise scaled by per-feature training variance.
@@ -44,12 +49,12 @@ def conditional_mean_sampler(
 
 
 def linear_interpolation(
-    train_early: np.ndarray,
-    train_late: np.ndarray,
+    train_early: npt.NDArray[Any],
+    train_late: npt.NDArray[Any],
     n_samples: int,
     alpha: float = 1.0,
     rng: np.random.RandomState | None = None,
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """Extrapolate via linear interpolation between early and late timepoints.
 
     direction = mean(late) - mean(early)
