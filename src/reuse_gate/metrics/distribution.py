@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.spatial.distance import cdist  # type: ignore[import-untyped]
+from scipy.spatial.distance import cdist
 
 
 def energy_distance_multivariate(x: np.ndarray, y: np.ndarray) -> float:
