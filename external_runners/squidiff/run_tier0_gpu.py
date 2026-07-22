@@ -371,6 +371,8 @@ def sample_from_model(
     n_samples: int,
     gene_size: int,
     seed: int = 13,
+    conditioning_class: int | None = None,
+    output_name: str = "squidiff_generated.npy",
 ) -> np.ndarray:
     """Generate cells from trained Squidiff model."""
     import sys
@@ -421,21 +423,25 @@ def sample_from_model(
     model.eval()
     print(f"Model loaded: {sum(p.numel() for p in model.parameters()):,} params on {device}")
 
-    # Determine conditioning class and prepare x_start
+    # Determine conditioning class and prepare x_start.
+    # The conditioning class is the largest label seen in training. For the
+    # temporal split that is the latest observed timepoint, which is the only
+    # class available when extrapolating to unseen later ones. Selection is
+    # done on `Group` rather than any dataset-specific column so the same code
+    # serves the CAR-NK split and the upstream simulated dataset.
     if class_cond:
         import anndata as ad
         train_adata = ad.read_h5ad(train_adata_path)
-        # Use the last timepoint class (D14) for generation
-        max_class = int(train_adata.obs["Group"].max())
-        print(f"Conditioning on class {max_class} (D14 timepoint)")
+        if conditioning_class is None:
+            conditioning_class = int(train_adata.obs["Group"].max())
+        print(f"Conditioning on class {conditioning_class} (largest training label)")
 
-        # x_start: use D14 cells as conditioning reference
-        d14_mask = train_adata.obs["timepoint_numeric"] == 14
-        x_start_data = train_adata[d14_mask].X
+        class_mask = train_adata.obs["Group"].to_numpy() == conditioning_class
+        x_start_data = train_adata[class_mask].X
         if hasattr(x_start_data, "toarray"):
             x_start_data = x_start_data.toarray()
         x_start = torch.tensor(x_start_data, dtype=torch.float32, device=device)
-        print(f"  x_start reference: {x_start.shape} D14 cells")
+        print(f"  x_start reference: {tuple(x_start.shape)} cells of class {conditioning_class}")
 
     # Generate samples
     print(f"Generating {n_samples} samples...")
@@ -449,7 +455,9 @@ def sample_from_model(
             idx = torch.randint(0, x_start.shape[0], (n_samples,))
             model_kwargs = {
                 "x_start": x_start[idx],
-                "group": torch.full((n_samples,), max_class, dtype=torch.float32, device=device),
+                "group": torch.full(
+                    (n_samples,), conditioning_class, dtype=torch.float32, device=device
+                ),
                 "drug_dose": None,
                 "control_feature": None,
             }
@@ -468,7 +476,7 @@ def sample_from_model(
     print(f"Generated {n_samples} cells in {gen_time:.1f}s")
 
     # Save
-    pred_path = output_dir / "squidiff_generated.npy"
+    pred_path = output_dir / output_name
     np.save(pred_path, generated_np)
     print(f"Saved: {pred_path}")
 
