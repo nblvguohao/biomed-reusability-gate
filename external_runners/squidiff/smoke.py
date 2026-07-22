@@ -17,10 +17,9 @@ def run_smoke(train_path: Path, output_dir: Path, seed: int = 13) -> dict:
     Returns a dict with keys: status, predictions_path, metrics, error.
     """
     try:
+        import anndata as ad
         import numpy as np
         import torch
-
-        import anndata as ad
 
         # Load or create synthetic data
         if train_path.exists():

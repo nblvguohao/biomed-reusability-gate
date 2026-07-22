@@ -8,7 +8,6 @@ This test requires:
 Marked as integration because it requires the full Squidiff dependency chain.
 """
 
-import json
 from pathlib import Path
 
 import pytest
