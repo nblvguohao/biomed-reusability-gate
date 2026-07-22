@@ -52,8 +52,8 @@
 
 ### If Squidiff selected
 
-- [ ] **SQ-1:** Immutable temporal experiment planner
-- [ ] **SQ-2:** Tier 0 experiment
+- [x] **SQ-1:** Immutable temporal experiment planner
+- [x] **SQ-2:** Tier 0 experiment — GO: PASS ✅
 - [ ] **SQ-3:** Tier 1 (only if Tier 0 GO)
 
 ### If CMonge selected
