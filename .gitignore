@@ -43,6 +43,10 @@ data/processed/
 runs/
 artifacts/
 
+# Zenodo staging (large binaries; uploaded to Zenodo directly, not committed)
+zenodo_package/
+zenodo_upload/
+
 # Environment
 .env
 .env.local
