@@ -28,7 +28,7 @@ def energy_distance_multivariate(x: npt.NDArray[Any], y: npt.NDArray[Any]) -> fl
     b = np.mean(d_xx)  # within-x
     c = np.mean(d_yy)  # within-y
 
-    return float(max(0.0, 2.0 * a - b - c))
+    return float(max(0.0, float(2.0 * a - b - c)))
 
 
 def median_pairwise_distance(

@@ -46,7 +46,7 @@ SEED = 13
 
 def _evaluate_one(model_path: Path, train_mat, train_tp, test_mat, test_tp, gene_size, device):
     import torch
-    from carnk_latent_extrapolation import build_model, sample_around_point, _encode
+    from carnk_latent_extrapolation import _encode, build_model, sample_around_point
 
     from reuse_gate.metrics.distribution import energy_distance_multivariate
 
