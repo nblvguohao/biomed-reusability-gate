@@ -36,7 +36,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch  # noqa: E402
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Patch  # noqa: E402
 
 # ── Mandatory: editable text in SVG ──────────────────────────────────────────
 plt.rcParams["font.family"] = "sans-serif"
@@ -366,7 +366,21 @@ def figure3(root: Path, out_dir: Path) -> dict:
     panel_label(ax_b, "b", x=-0.34, y=1.10)
 
     # ── c: five seeds, three metrics ──
-    S, base = seeds["summary"], seeds["baselines"]
+    # Baselines come from the provenance audit (Phase 1.1), not the seed-study
+    # metrics file: the manuscript text cites the true D14-resample
+    # last-observation, not the stale point-mass variant.
+    prov = json.loads(
+        (root / "artifacts/baseline_provenance/baseline_provenance.json").read_text())
+    S = seeds["summary"]
+    base = {
+        "conditional_mean": prov["baselines"]["conditional_mean"]["scores"],
+        "last_observation": prov["baselines"]["last_observation_true_d14_resample"]["scores"],
+    }
+    # Same-distribution reference band (Phase 2.1): random halves of the
+    # held-out population scored against each other. Absent until the
+    # robustness pass has run; the figure builds either way.
+    rob_path = root / "artifacts/evaluation_robustness/robustness.json"
+    null_anchor = json.loads(rob_path.read_text())["null_anchor"] if rob_path.exists() else None
     metrics = [
         ("energy_distance", "Energy distance", True, "lower is better"),
         ("mmd_rbf", "MMD (RBF)", False, "lower is better"),
@@ -384,6 +398,12 @@ def figure3(root: Path, out_dir: Path) -> dict:
         for name, col, ls in (("conditional_mean", C["ink"], "-"),
                               ("last_observation", C["neutral_mid"], "--")):
             ax.axhline(base[name][key], color=col, ls=ls, lw=1.0, zorder=1)
+        if null_anchor is not None:
+            n = null_anchor[key]
+            lo_band, hi_band = (n["q05"], 1.0) if key == "mean_expression_correlation" \
+                else (0.0, n["q95"])
+            ax.axhspan(lo_band, hi_band, color=C["neutral_light"], alpha=0.45, zorder=0)
+            ax.axhline(n["mean"], color=C["neutral_dark"], ls=":", lw=0.9, zorder=1)
         if logscale:
             ax.set_yscale("log")
         ax.set_xlim(-0.5, 0.5)
@@ -392,14 +412,21 @@ def figure3(root: Path, out_dir: Path) -> dict:
         ax.text(0.5, -0.13, hint, transform=ax.transAxes, fontsize=5.8,
                 color=C["neutral_dark"], ha="center")
     ax_c[0].set_ylabel("Value across 5 seeds")
-    ax_c[0].set_ylim(3, 40)
+    ax_c[0].set_ylim(0.03, 40)
     ax_c[2].set_ylim(0.75, 1.0)
     # One shared key rather than three sets of colliding inline labels.
-    ax_c[1].plot([], [], "o", color=C["correct"], ms=5, label="Squidiff, 5 seeds")
-    ax_c[1].plot([], [], "-", color=C["ink"], lw=1.0, label="conditional-mean")
-    ax_c[1].plot([], [], "--", color=C["neutral_mid"], lw=1.0, label="last-observation")
-    ax_c[1].legend(loc="upper center", bbox_to_anchor=(0.5, -0.20), ncol=3,
-                   fontsize=6, handlelength=1.5, columnspacing=1.4)
+    handles = [
+        plt.Line2D([], [], marker="o", ls="", color=C["correct"], ms=5,
+                   label="Squidiff, 5 seeds"),
+        plt.Line2D([], [], color=C["ink"], lw=1.0, label="conditional-mean"),
+        plt.Line2D([], [], color=C["neutral_mid"], ls="--", lw=1.0,
+                   label="last-observation (D14 resample)"),
+    ]
+    if null_anchor is not None:
+        handles.append(Patch(facecolor=C["neutral_light"], alpha=0.45, edgecolor="none",
+                             label="same-distribution band"))
+    ax_c[1].legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.20),
+                   ncol=2, fontsize=6, handlelength=1.5, columnspacing=1.4)
     # Sits in the empty lower half of the MMD axes rather than above the title,
     # so the reader meets the caveat while looking at the metric it applies to.
     ax_c[1].text(0.5, 0.30, "at the upstream noise scale this metric\n"
@@ -428,6 +455,7 @@ def figure3(root: Path, out_dir: Path) -> dict:
         "b_validation_selected_scales": seeds["summary"]["selected_scales"],
         "c_seed_summary": {k: v for k, v in S.items() if k != "selected_scales"},
         "c_baselines": base,
+        "c_null_anchor": null_anchor,
         "excluded": "MMD at scale 0.7 is saturated (0.638179 for all five seeds, equal to "
                     "mean(k_xx)) and is deliberately not plotted",
     }
