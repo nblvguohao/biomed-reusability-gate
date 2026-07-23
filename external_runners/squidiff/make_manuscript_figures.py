@@ -291,8 +291,15 @@ def figure2(root: Path, out_dir: Path) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def figure3(root: Path, out_dir: Path) -> dict:
-    raw = json.loads((root / "artifacts/squidiff_step_sweep/sweep_metrics.json").read_text())
-    logn = json.loads((root / "artifacts/squidiff_sweep_lognorm/sweep_metrics.json").read_text())
+    # Main panel: the published-protocol latent-extrapolation A/B. The
+    # class-conditional probe (train_step_sweep) is retained only as labelled
+    # corroboration — Barrier 2 argues that branch cannot run as released, so
+    # the main-text evidence for Barrier 1 must not rest on it.
+    ab = json.loads(
+        (root / "artifacts/squidiff_latent_extrap_ab/preprocessing_ab_metrics.json").read_text())
+    probe_raw = json.loads((root / "artifacts/squidiff_step_sweep/sweep_metrics.json").read_text())
+    probe_logn = json.loads(
+        (root / "artifacts/squidiff_sweep_lognorm/sweep_metrics.json").read_text())
     noise = json.loads(
         (root / "artifacts/squidiff_latent_extrap/latent_noise_scale_sweep.json").read_text())
     seeds = json.loads(
@@ -306,11 +313,11 @@ def figure3(root: Path, out_dir: Path) -> dict:
     ax_c = [fig.add_subplot(gs[1, i]) for i in range(3)]
 
     # ── a: preprocessing decides the direction of the trend (hero) ──
-    steps = [e["steps"] for e in logn["sweep"]]
-    ed_raw = [e["energy_distance"] for e in raw["sweep"]]
-    ed_log = [e["energy_distance"] for e in logn["sweep"]]
+    steps = [e["steps"] for e in ab["conditions"]["raw"]["per_budget"]]
+    ed_raw = [e["pooled_energy_distance"] for e in ab["conditions"]["raw"]["per_budget"]]
+    ed_log = [e["pooled_energy_distance"] for e in ab["conditions"]["lognorm"]["per_budget"]]
     ax_a.plot(steps, ed_raw, "o-", color=C["wrong"], lw=1.7, ms=4.6,
-              label="Raw counts, what the documentation leaves you to guess")
+              label="Raw counts, what the code path leaves you to guess")
     ax_a.plot(steps, ed_log, "o-", color=C["correct"], lw=1.7, ms=4.6,
               label="normalize_total + log1p, what the method expects")
     ax_a.set_xscale("log")
@@ -323,7 +330,8 @@ def figure3(root: Path, out_dir: Path) -> dict:
     ax_a.legend(loc="lower left", fontsize=6, handlelength=1.6)
     ax_a.set_title("Preprocessing decides whether more training helps or hurts",
                    fontsize=7.4, pad=14)
-    ax_a.text(0.0, 1.015, "identical code, data, split and seed; only preprocessing differs",
+    ax_a.text(0.0, 1.015, "published latent-extrapolation protocol, noise scale fixed at "
+                          "0.03; identical code, data, split and seed",
               transform=ax_a.transAxes, fontsize=5.9, va="bottom", color=C["neutral_dark"])
     ax_a.annotate(f"{ed_raw[-1]:.0f}", (steps[-1], ed_raw[-1]), textcoords="offset points",
                   xytext=(7, 1), fontsize=6.2, color=C["wrong"])
@@ -405,6 +413,17 @@ def figure3(root: Path, out_dir: Path) -> dict:
         "figure": "fig3",
         "files": [str(p) for p in paths],
         "a_preprocessing_ab": {"steps": steps, "raw_counts": ed_raw, "log_normalized": ed_log},
+        "a_protocol": ("latent extrapolation, released configuration, fixed noise "
+                       f"scale {ab['fixed_noise_scale']} (single-variable A/B)"),
+        "a_class_conditional_probe": {
+            "note": ("corroboration only: class-conditional probe from "
+                     "train_step_sweep.py, held fixed across preprocessing "
+                     "conditions; not the main evidence, since Barrier 2 shows "
+                     "this branch cannot run as released"),
+            "steps": [e["steps"] for e in probe_logn["sweep"]],
+            "raw_counts": [e["energy_distance"] for e in probe_raw["sweep"]],
+            "log_normalized": [e["energy_distance"] for e in probe_logn["sweep"]],
+        },
         "b_noise_scale": sc,
         "b_validation_selected_scales": seeds["summary"]["selected_scales"],
         "c_seed_summary": {k: v for k, v in S.items() if k != "selected_scales"},

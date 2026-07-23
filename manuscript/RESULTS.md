@@ -140,6 +140,39 @@ generated samples share no support with the real data and are mutually
 dispersed, so `k_xy` and `k_yy` both vanish. A synthetic shift check saturates
 the kernel at 1.335 for any offset above 20.
 
+## Positive control: the same baselines on the authors' own released setting
+
+`positive_control.py`, on the released VO checkpoint + VO_trained_adata.h5ad
+(figshare 10.6084/m9.figshare.27948633). Task: predict the day-1 VO population
+from the day-0 anchor via the published latent-extrapolation mechanism.
+Source: `artifacts/positive_control/positive_control_metrics.json`.
+Latent geometry: direction norm 0.84, within-day-1 spread 1.36, noise injected
+at the released default scale 0.7 has norm 5.42 (6.5x the direction).
+
+| condition | ED | MMD (RBF) | mean corr |
+|---|---|---|---|
+| Squidiff, released default scale 0.7 | 626.55 | saturated (0.638) | 0.451 |
+| Squidiff, scale 0.03 (3 sampling seeds) | 7.24 ± 0.07 | 0.031 | 0.975 |
+| conditional-mean, fit on pooled days 0+1 | **1.51** | 0.012 | 0.974 |
+| last-observation, day-0 resample | 47.58 | 0.378 | 0.281 |
+| oracle Gaussian, fit on day-1 marginals | 0.45 | 0.003 | 1.000 |
+
+Read-out:
+
+- The released default 0.7 destroys the prediction on the authors' own data
+  too — Barrier 3 is not CAR-NK-specific.
+- Even at a repaired scale, Squidiff (7.24) trails a per-gene Gaussian fit on
+  the *same pooled training data* (1.51) — a baseline whose mean sits midway
+  between the two days. The CAR-NK ordering is therefore not specific to our
+  low-drift task: it holds on the authors' own released setting.
+- The day-0 resample loses badly (47.58), so the VO task has genuine drift —
+  the "the task was just too easy" explanation does not cover this control.
+- The oracle Gaussian (0.45) marks the marginal moment-matching ceiling.
+- Consequence: the performance result must be framed as a property of the
+  evaluation regime — distributional metrics reward marginal moments, and the
+  upstream repository reports no quantitative metric that would have surfaced
+  this — not as "Squidiff fails to transfer to new data".
+
 ## Also found
 
 - The upstream Gaussian simulated benchmark is degenerate under its own

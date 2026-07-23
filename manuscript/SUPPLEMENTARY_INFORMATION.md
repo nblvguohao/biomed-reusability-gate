@@ -243,3 +243,37 @@ population moves little between the training and held-out windows, so a
 method that simply replays the last observed population is hard to beat on
 distributional metrics. Squidiff (validation-selected ED 27.15 ± 1.78)
 trails both baselines on every metric.
+
+---
+
+## Supplementary Note 8 | Positive control on the authors' own released setting
+
+Source: `artifacts/positive_control/positive_control_metrics.json`,
+`positive_control.py`. Task: predict the day-1 VO population from the day-0
+anchor through the published latent-extrapolation mechanism, using the
+released VO checkpoint and its released training data (6,838 cells, 596
+genes, days {0, 1}; figshare 10.6084/m9.figshare.27948633, CC BY 4.0).
+Latent geometry on the released encoder: direction norm 0.84, within-day-1
+spread 1.36, injected noise norm at the released default scale 0.7 is 5.42 —
+6.5× the direction being extrapolated.
+
+| Condition | Fit set | ED | MMD (RBF) | Mean corr |
+|---|---|---|---|---|
+| Squidiff, released default 0.7 | released checkpoint; direction E\[z_day1\]−E\[z_day0\] | 626.55 | saturated (0.638) | 0.451 |
+| Squidiff, scale 0.03 | as above; 3 sampling seeds | 7.24 ± 0.07 | 0.031 | 0.975 |
+| Conditional-mean, pooled | per-gene mean/variance on all 6,838 training cells (days 0+1) | **1.51** | 0.012 | 0.974 |
+| Last-observation, day-0 resample | real day-0 cells resampled | 47.58 | 0.378 | 0.281 |
+| Oracle Gaussian | per-gene mean/variance on day-1 cells (not usable for prediction) | 0.45 | 0.003 | 1.000 |
+
+Three readings. (i) The released default scale destroys the prediction on
+the authors' own data too — Barrier 3 is not specific to our CAR-NK encoder.
+(ii) Even at a repaired scale, Squidiff trails a per-gene Gaussian fit on
+the same pooled training data (7.24 vs 1.51) whose mean sits midway between
+the two days; per-gene mean correlation is a dead heat (0.975 vs 0.974).
+(iii) The VO task is not trivial — the day-0 resample scores 47.58, so the
+population genuinely moves — yet the moment-matched baseline wins there as
+well. The CAR-NK ordering therefore reflects what these distributional
+metrics reward (marginal moments), not a CAR-NK-specific or low-drift
+artefact; and because the upstream reproducibility material reports no
+quantitative metric (Supplementary Note 4), nothing upstream could have
+surfaced it.
