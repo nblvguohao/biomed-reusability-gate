@@ -24,7 +24,7 @@ One detail in the released data proved decisive later. The authors' own training
 
 ## Barrier 1: an undocumented preprocessing step that inverts conclusions
 
-That single omission is the most dangerous barrier we met, because it is silent and it flips results. We first trained on raw counts, the natural default for a transcriptomics tool. We worked on GSE190976 (16,256 mouse CAR-NK cells), training on pre-infusion, day 7 and day 14 (11,588 cells, 13 samples) and holding out day 21 and day 28 (4,668 cells, 5 samples), with no sample on both sides and the top 500 highly variable genes fitted on training cells only. On raw counts, energy distance to the held-out population degraded monotonically as training progressed, from 321.6 at 5,000 steps to 412.2 at 20,000 and 432.5 at 50,000, while training loss fell throughout. Every conclusion we drew from that run — that the model degrades with training, that it fails to recover rare states — was wrong.
+That single omission is the most dangerous barrier we met, because it is silent and it flips results. We first trained on raw counts, the natural default for a transcriptomics tool. We worked on GSE190976 (ref. 5; 16,256 mouse CAR-NK cells), training on pre-infusion, day 7 and day 14 (11,588 cells, 13 samples) and holding out day 21 and day 28 (4,668 cells, 5 samples), with no sample on both sides and the top 500 highly variable genes fitted on training cells only. On raw counts, energy distance to the held-out population degraded monotonically as training progressed, from 321.6 at 5,000 steps to 412.2 at 20,000 and 432.5 at 50,000, while training loss fell throughout. Every conclusion we drew from that run — that the model degrades with training, that it fails to recover rare states — was wrong.
 
 Applying the upstream transformation, library-size normalization to 10,000 counts per cell followed by a log1p transform, reversed the picture (Fig. 3a). The same code, data, split and seed now improve with training, from 409.4 to 95.4 to 6.85, a 60-fold gain, and rare-state recall rises from 0.0 to 1.0. The generated output then sits on the same scale as the authors' released data (maximum 9.0 versus 14.5), where raw counts, with a maximum of 12,167, are three orders of magnitude away (Fig. 2b). The preprocessing step is therefore not optional, and because it is undocumented in the code path, a reuser has no signal that they have omitted it; they simply get a plausible-looking but inverted result. We stress that in this comparison the generation procedure is held fixed across the two conditions and serves only as a probe of output quality; the published prediction protocol is evaluated separately below. The effect itself is a property of the training data and the noise schedule, not of how the output is later conditioned.
 
@@ -42,7 +42,7 @@ The published mechanism for predicting development is not class-conditional samp
 
 ## Performance under the published protocol
 
-With both silent barriers cleared, we evaluated Squidiff under its own published configuration and protocol, across five independently trained seeds and three metrics (Fig. 3c). Squidiff is worse than a per-gene Gaussian baseline, which carries only per-gene means and variances, on all three metrics in all five seeds. With the validation-selected noise scale, Squidiff reaches an energy distance of 27.15 ± 1.78 against the baseline's 4.26, a maximum mean discrepancy of 0.158 ± 0.008 against 0.058, and a per-gene mean correlation of 0.832 ± 0.013 against 0.938; it also trails a last-observation baseline on every metric. The third metric is invariant to affine rescaling of the output, so the gap is a genuine shortfall in captured structure rather than another scale artefact. At the released noise scale of 0.7 the model is far worse still (energy distance 1,244 ± 49); the maximum mean discrepancy there saturates the kernel and returns the same value for every seed, so we do not report it as a number.
+With both silent barriers cleared, we evaluated Squidiff under its own published configuration and protocol, across five independently trained seeds and three metrics (Fig. 3c). Squidiff is worse than a per-gene Gaussian baseline, which carries only per-gene means and variances, on all three metrics in all five seeds. With the validation-selected noise scale, Squidiff reaches an energy distance of 27.15 ± 1.78 against the baseline's 4.26, a maximum mean discrepancy under an RBF-kernel two-sample test (ref. 6) of 0.158 ± 0.008 against 0.058, and a per-gene mean correlation of 0.832 ± 0.013 against 0.938; it also trails a last-observation baseline on every metric. The third metric is invariant to affine rescaling of the output, so the gap is a genuine shortfall in captured structure rather than another scale artefact. At the released noise scale of 0.7 the model is far worse still (energy distance 1,244 ± 49); the maximum mean discrepancy there saturates the kernel and returns the same value for every seed, so we do not report it as a number.
 
 ## Discussion
 
@@ -82,7 +82,7 @@ Split: training pre-infusion, D7 and D14, 11,588 cells from 13 samples; held out
 
 ## Data availability
 
-The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure are available via Zenodo at [DOI to be minted on acceptance].
+The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976, originally reported in ref. 5. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure are available via Zenodo at [DOI to be minted on acceptance].
 
 ## Code availability
 
@@ -90,11 +90,11 @@ All scripts for data preparation, training, sampling, evaluation and figure gene
 
 ---
 
-## References (provisional; to be completed and formatted)
+## References
 
 1. He, Y. et al. Squidiff: predicting cellular development and responses to perturbations using a diffusion model. *Nat. Methods* (2025). https://doi.org/10.1038/s41592-025-02877-y
 2. Ho, J., Jain, A. & Abbeel, P. Denoising diffusion probabilistic models. *Adv. Neural Inf. Process. Syst.* (2020).
 3. Song, J., Meng, C. & Ermon, S. Denoising diffusion implicit models. *Int. Conf. Learn. Represent.* (2021).
 4. Székely, G. J. & Rizzo, M. L. Energy statistics: a class of statistics based on distances. *J. Stat. Plan. Inference* (2013).
-5. [Full citation for the GSE190976 CAR-NK source study — to be added]
-6. [Citation for the maximum mean discrepancy / kernel two-sample test — to be added]
+5. Li, L. et al. Loss of metabolic fitness drives tumor resistance after CAR-NK cell therapy and can be overcome by cytokine engineering. *Sci. Adv.* 9, eadd6997 (2023). https://doi.org/10.1126/sciadv.add6997
+6. Gretton, A., Borgwardt, K. M., Rasch, M. J., Schölkopf, B. & Smola, A. A kernel two-sample test. *J. Mach. Learn. Res.* 13, 723–773 (2012).
