@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import multiprocessing
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -114,6 +116,52 @@ def cluster_mass_recall(real, gen, n_clusters: int, rare_below: float, rng) -> f
     hits = sum(mass[c] for c in rare if c in covered)
     total = float(mass[rare].sum())
     return float(hits / total) if total > 0 else 1.0
+
+
+def _bootstrap_one(task: tuple) -> tuple:
+    """One (population, mode) bootstrap. Top-level so spawn workers can pickle it.
+
+    Each task builds its own RandomState from the shared seed, so a task's
+    numbers are independent of how many siblings run alongside it.
+    """
+    from reuse_gate.metrics.distribution import energy_distance_multivariate
+
+    name, mode, real, gen, cluster, n_boot, seed = task
+    est, lo, hi = bootstrap_metric_ci(
+        real, gen, energy_distance_multivariate,
+        n_boot=n_boot, rng=np.random.RandomState(seed), cluster=cluster,
+    )
+    return name, mode, est, lo, hi
+
+
+def parallel_bootstrap(populations, real, cluster, n_boot: int, seed: int,
+                       processes: int | None = None) -> dict:
+    """Bootstrap ED CIs for every population, cell- and cluster-level.
+
+    The (population × mode) tasks are independent and each re-seeds its own
+    RandomState, so the result is identical to the sequential loop it
+    replaces; only wall-clock changes. `processes=1` stays in-process (used
+    by the determinism test); otherwise a spawn Pool fans the tasks out.
+    """
+    tasks = []
+    for name, gen in populations.items():
+        tasks.append((name, "cell", real, gen, None, n_boot, seed))
+        tasks.append((name, "sample", real, gen, cluster, n_boot, seed))
+
+    if processes is None:
+        processes = min(8, os.cpu_count() or 1)
+    if processes <= 1:
+        results = [_bootstrap_one(t) for t in tasks]
+    else:
+        with multiprocessing.get_context("spawn").Pool(processes=processes) as pool:
+            results = pool.map(_bootstrap_one, tasks)
+
+    out: dict = {}
+    for name, mode, est, lo, hi in results:
+        entry = out.setdefault(name, {}).setdefault("energy_distance", {})
+        entry["estimate"] = est
+        entry["cell_ci" if mode == "cell" else "sample_ci"] = [lo, hi]
+    return out
 
 
 # ── Provenance ───────────────────────────────────────────────────────────────
@@ -274,22 +322,7 @@ def run(sweep_dir: Path, seed_study_dir: Path, output_dir: Path) -> dict:
     # ── 2.2 bootstrap CIs + leave-one-sample-out + baseline dispersion ──
     print("2.2 bootstrap CIs ...")
     B = 200
-
-    def ed_fn(a, b):
-        return energy_distance_multivariate(a, b)
-
-    boot = {}
-    for name, gen in populations.items():
-        est, lo, hi = bootstrap_metric_ci(test_mat, gen, ed_fn, n_boot=B,
-                                          rng=np.random.RandomState(21))
-        est_s, lo_s, hi_s = bootstrap_metric_ci(
-            test_mat, gen, ed_fn, n_boot=B, rng=np.random.RandomState(21), cluster=samples
-        )
-        boot[name] = {
-            "energy_distance": {"estimate": est, "cell_ci": [lo, hi],
-                                "sample_ci": [lo_s, hi_s]},
-        }
-    result["bootstrap"] = boot
+    result["bootstrap"] = parallel_bootstrap(populations, test_mat, samples, n_boot=B, seed=21)
 
     print("2.2 leave-one-sample-out ...")
     loso = {}

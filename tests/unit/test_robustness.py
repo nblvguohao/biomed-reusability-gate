@@ -19,6 +19,7 @@ from evaluation_robustness import (  # noqa: E402
     cluster_mass_recall,
     correlation_frobenius_distance,
     null_energy_distance,
+    parallel_bootstrap,
 )
 
 
@@ -55,6 +56,37 @@ def test_bootstrap_ci_contains_estimate_and_tracks_clusters():
     )
     assert lo_c <= est_c <= hi_c
     assert (hi_c - lo_c) >= 0.0
+
+
+def test_parallel_bootstrap_matches_sequential_loop():
+    """The parallel driver must be bit-for-bit identical to the sequential one.
+
+    Each (population, mode) task seeds its own RandomState, so distributing
+    the tasks changes execution order only, never the numbers. `processes=1`
+    exercises the deterministic in-process fallback; the Pool path is thin
+    glue over the same worker.
+    """
+    from reuse_gate.metrics.distribution import energy_distance_multivariate
+
+    rng = np.random.RandomState(5)
+    real = rng.randn(60, 4)
+    populations = {"a": rng.randn(60, 4), "b": rng.randn(60, 4) + 0.5}
+    samples = np.repeat(["s1", "s2", "s3"], 20)
+
+    got = parallel_bootstrap(populations, real, samples, n_boot=10, seed=21, processes=1)
+
+    for name, gen in populations.items():
+        est, lo, hi = bootstrap_metric_ci(
+            real, gen, energy_distance_multivariate, n_boot=10, rng=np.random.RandomState(21)
+        )
+        est_s, lo_s, hi_s = bootstrap_metric_ci(
+            real, gen, energy_distance_multivariate, n_boot=10,
+            rng=np.random.RandomState(21), cluster=samples,
+        )
+        entry = got[name]["energy_distance"]
+        assert entry["estimate"] == est
+        assert entry["cell_ci"] == [lo, hi]
+        assert entry["sample_ci"] == [lo_s, hi_s]
 
 
 def test_correlation_frobenius_distance_catches_structure():
