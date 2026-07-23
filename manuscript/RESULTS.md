@@ -90,6 +90,50 @@ Worse than the conditional-mean baseline on all three metrics in all five seeds.
 The third metric is invariant to affine rescaling, so this is not an output-scale
 artefact.
 
+## Baseline provenance and the energy-distance decomposition
+
+`baseline_provenance.py`, on `artifacts/squidiff_sweep_lognorm` — states exactly
+what each baseline is fit on, and decomposes energy distance (ED) into its three
+terms to explain the baseline ordering. Source:
+`artifacts/baseline_provenance/baseline_provenance.json`.
+
+Fit sets (both baselines fit **only** on the pooled training window —
+pre-infusion + D7 + D14, 11,588 cells; held-out D21/D28 cells are never touched):
+
+- **conditional_mean**: per-gene mean and variance fit on the pooled training
+  window; samples are i.i.d. diagonal Gaussian draws. No gene–gene covariance.
+- **last_observation (as implemented in `temporal_baselines.last_observation`)**:
+  the pooled training mean tiled to every held-out cell — a constant
+  **point-mass** prediction with **zero variance**. Despite the name, it is not
+  restricted to the last timepoint; the name and the implementation disagree.
+- **last_observation (true D14 resample, added in this audit)**: real D14 cells
+  from the training window, resampled with replacement to held-out size.
+
+| baseline | cross | within_real | within_generated | ED | MMD | mean corr |
+|---|---|---|---|---|---|---|
+| conditional_mean | 36.53 | 32.69 | 36.11 | 4.26 | 0.0577 | 0.9375 |
+| last_observation (point mass, as implemented) | 25.90 | 32.69 | **0.0** | 19.10 | 0.1145 | 0.9378 |
+| last_observation (true D14 resample) | 33.85 | 32.69 | 34.29 | **0.72** | 0.0108 | 0.9760 |
+
+Why conditional-mean (4.26) beats the point-mass last-observation (19.10): with
+ED = 2·cross − within_real − within_generated, a zero-variance prediction
+forfeits the entire within-generated term (0.0 vs 32.69 for the real
+population). The point mass actually has the *best* cross term of the three
+(25.90 — the pooled training mean sits centrally); it loses purely because the
+metric credits matched variance. The ordering is therefore a property of the
+metric acting on a zero-variance prediction, not evidence about centering.
+
+The true D14 resample reaches ED 0.72 — the strongest baseline of all, and far
+ahead of Squidiff's validation-selected 27.15 ± 1.78. This is consistent with
+the low-drift task structure stated in the manuscript (the CAR-NK population
+mean moves little between training and held-out windows), and it sharpens the
+performance claim: Squidiff trails *both* a per-gene Gaussian and a resampled
+last-observed population on every metric.
+
+Consequence for the manuscript: the point-mass variant must be named as such
+("pooled training-mean point prediction") wherever it appears, and the true
+D14-resample baseline must be reported alongside it.
+
 **MMD at scale 0.7 must not be quoted as a number.** All five independently
 trained models return 0.638179 to six decimals, which is `mean(k_xx)` alone: the
 generated samples share no support with the real data and are mutually

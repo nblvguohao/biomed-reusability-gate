@@ -73,9 +73,10 @@ Source: `artifacts/squidiff_latent_extrap/latent_noise_scale_sweep.json`.
 | 0.054 | 0.415 | 29.86 | 3.37 / 3.89 |
 | 0.0 | 0.0 | 27.56 | 3.29 / 3.88 |
 
-Reference: real held-out (D21+D28) mean 1.28, s.d. 1.42 (log-normalized
-scale). Baselines on this split: conditional-mean 4.26, last-observation
-19.10.
+Baselines on this split: conditional-mean 4.26, last-observation (D14
+resample) 0.72. A zero-variance point-mass variant of last-observation
+(pooled training mean tiled to each cell) scores 19.10; see Supplementary
+Note 7 for the decomposition that explains the difference.
 
 ---
 
@@ -145,8 +146,10 @@ to keep this a single-variable comparison), seed 13. Source:
 | 50,000 | 561.72 | 27.68 |
 
 Baselines on the raw-count split: conditional-mean 129.30, last-observation
-687.72. Baselines on the log-normalized split: conditional-mean 4.26,
-last-observation 19.10. (Baselines differ between the two rows because
+(point-mass variant) 687.72. Baselines on the log-normalized split:
+conditional-mean 4.26, last-observation (point-mass variant) 19.10; the
+D14-resample last-observation scores 0.72 on the log-normalized split
+(Supplementary Note 7). (Baselines differ between the two rows because
 energy distance is scale-sensitive and the two splits are on different
 scales by construction — this is the same reason the main comparison uses a
 scale-invariant third metric.)
@@ -211,3 +214,32 @@ Source: `artifacts/released_checkpoint/released_checkpoint_check.json`,
 | Energy distance to reference population | 2.098 |
 | Released training data scale | mean 1.78, max 14.47 (confirms log-normalization independently of our own preprocessing sweep) |
 | Released training configuration | `class_cond=False`, `use_encoder=True`, `num_layers=3`, `gene_size=596`, 2,400 steps, batch size 16 |
+
+---
+
+## Supplementary Note 7 | Baseline fit sets and the energy-distance decomposition
+
+Source: `artifacts/baseline_provenance/baseline_provenance.json`,
+`baseline_provenance.py`. Stated because the headline comparison depends on
+it: **both baselines are fit only on the pooled training window**
+(pre-infusion + D7 + D14, 11,588 cells); held-out cells are never touched.
+
+| Baseline | Fit set | cross | within_real | within_generated | ED | MMD | mean corr |
+|---|---|---|---|---|---|---|---|
+| Conditional-mean sampler | per-gene mean/variance, pooled training window | 36.53 | 32.69 | 36.11 | 4.26 | 0.0577 | 0.9375 |
+| Last-observation, as first implemented | pooled training mean tiled to every cell (constant, zero variance) | 25.90 | 32.69 | **0.0** | 19.10 | 0.1145 | 0.9378 |
+| Last-observation, D14 resample (used in the main text) | real D14 training cells resampled with replacement | 33.85 | 32.69 | 34.29 | **0.72** | 0.0108 | 0.9760 |
+
+Two points follow. First, the early "last-observation" implementation and
+its name disagreed: it was a zero-variance point mass, and with
+ED = 2·cross − within_real − within_generated it forfeited the entire
+within-generated term (0.0 vs 32.69 for the real population). Its cross term
+is actually the best of the three (25.90 — the pooled training mean sits
+centrally), so the 4.26-vs-19.10 ordering reflects the metric's treatment of
+a zero-variance prediction, not centering. Second, the D14-resample
+last-observation is the strongest baseline of all (ED 0.72), consistent with
+the low-drift task structure discussed in the main text — the CAR-NK
+population moves little between the training and held-out windows, so a
+method that simply replays the last observed population is hard to beat on
+distributional metrics. Squidiff (validation-selected ED 27.15 ± 1.78)
+trails both baselines on every metric.
