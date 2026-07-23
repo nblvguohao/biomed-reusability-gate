@@ -7,6 +7,47 @@ two methodology errors were found.
 `reusability_report.md` is the **current live manuscript**, rewritten on the
 corrected evidence base. Submit that one.
 
+## 2026-07-24 reviewer-revision state (TDD: docs/superpowers/plans/2026-07-23-reviewer-revision-tdd.md)
+
+Done and committed:
+
+- **Phase 0 ground truths** (`reports/`): the log-normalization IS described
+  in the published Methods as a one-line generic phrase ("normalized and
+  log-transformed…") with no executable recipe — title/abstract/Barrier 1
+  reworded from "undocumented" to the code–documentation gap. The 0.7 noise
+  scale is a signature default the released prediction path never forwards —
+  "hardcoded" reworded accordingly. Claim→code-path map built; Barrier 2
+  recalibrated from "headline perturbation-response use" to "the library's
+  only label-conditional interface, unused by any released configuration".
+- **Phase 1.1 baseline provenance**: both baselines fit only on the pooled
+  training window; the as-implemented last_observation is a zero-variance
+  point mass (explains 4.26 vs 19.10 via the ED within-sample term); true
+  D14-resample baseline added (ED 0.72). Methods section added to the
+  manuscript; Supp. Note 7.
+- **Phase 1.2 positive control**: on the authors' own VO checkpoint/data,
+  the released default 0.7 fails there too (ED 626.6), and at scale 0.03
+  Squidiff (7.24) still trails the pooled conditional-mean Gaussian (1.51);
+  VO has genuine drift (day-0 resample 47.6), so the ordering is a property
+  of the evaluation regime, not a CAR-NK/low-drift artefact. Performance
+  claim reframed; Supp. Note 8. Ahlmann-Eltze et al. 2025 (Nat Methods)
+  cited as precedent.
+- **Phase 1.3 Fig 3a**: main panel now uses the published-protocol A/B
+  (376.8→561.7 vs 312.4→27.7, 11-fold); class-conditional probe demoted to
+  labelled corroboration. Title/abstract re-centred; references completed
+  (11 refs, Crossref-verified); author contributions finalized
+  (**still needs each author's sign-off before submission**).
+
+In flight: Phase 2 robustness (null anchors, bootstrap CIs, LOSO, MMD
+bandwidth grid, structure metrics) — `evaluation_robustness.py`.
+
+Remaining before submission: integrate Phase 2 numbers into text/figures;
+mint Zenodo DOI (code + artifacts); transcribe REPORTING_SUMMARY.md into the
+journal form; confirm author contributions with all authors; decide on and
+document contact with the original authors per NMI Reusability Report
+practice. Pre-existing failure retained: tests/regression GPU step
+(test_training_step_runs_on_gpu) fails identically on clean HEAD
+(numpy/torch drift in .venv310; out of revision scope).
+
 ## Retracted from the draft
 
 | Claim in the draft | Why it is wrong |

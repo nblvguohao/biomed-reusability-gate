@@ -18,10 +18,11 @@ out D21/D28 (4,668 cells, 5 samples), zero sample overlap.
 | weights | 62 tensors, 54,565,522 parameters |
 | `load_state_dict` | 0 missing, 0 unexpected, `strict=True` would pass |
 | sampling | 512 cells, all finite, energy distance 2.098 |
+| null anchor for that ED | random halves of the same 512 reference cells: ED 0.566 mean, 0.697 q95 (50 splits) — 2.098 is close to, though above, the same-distribution floor |
 | released training data scale | mean 1.78, max 14.47, i.e. log-normalized |
 | released config | `class_cond=False`, `use_encoder=True`, `num_layers=3`, `gene_size=596`, 2,400 steps at batch 16 |
 
-## Barrier 1: undocumented preprocessing
+## Barrier 1: a preprocessing requirement the code path never applies
 
 Barriers are numbered in the order a reuser meets them, which is the order of
 the workflow in Fig. 1a, not the order in which we happened to find them.
@@ -63,7 +64,7 @@ first optimizer step, in a fixed cascade. The released config sets
 `class_cond=False`, so the branch was never exercised upstream. Each patch has a
 regression test confirmed to turn red when reverted.
 
-## Barrier 3: a hardcoded sampling constant
+## Barrier 3: a sampling constant the released path never exposes
 
 `latent_noise_scale_sweep.py`, `seed_study.py`
 
@@ -84,7 +85,8 @@ Validation-selected scale, one value chosen per seed on a training-only task:
 | Squidiff, scale 0.7 | 1244.01 ± 48.57 | saturated, see below | 0.4423 ± 0.0300 |
 | Squidiff, validation-selected | 27.15 ± 1.78 | 0.1579 ± 0.0081 | 0.8321 ± 0.0128 |
 | conditional-mean baseline | 4.26 | 0.0577 | +0.9375 |
-| last-observation baseline | 19.10 | 0.1145 | +0.9378 |
+| last-observation baseline (D14 resample) | 0.72 | 0.0108 | +0.9760 |
+| last-observation variant (pooled-mean point mass) | 19.10 | 0.1145 | +0.9378 |
 
 Worse than the conditional-mean baseline on all three metrics in all five seeds.
 The third metric is invariant to affine rescaling, so this is not an output-scale

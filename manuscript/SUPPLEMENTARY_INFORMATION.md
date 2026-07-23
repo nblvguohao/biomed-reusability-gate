@@ -1,8 +1,8 @@
 # Supplementary Information
 
 Supplementary material to *Reusability report: Squidiff reproduces as
-released but is silently undermined by undocumented preprocessing and a
-hardcoded sampling constant*. Every number below names the script and
+released but is silently undermined by a code–documentation gap and an
+unexposed sampling default*. Every number below names the script and
 artefact file that produced it, per the same convention as
 `manuscript/RESULTS.md`.
 
@@ -177,9 +177,13 @@ institution-internal HPC path and was not accessible for reproduction.
 
 No quantitative metric of any kind (accuracy, distance, correlation, or
 otherwise) appears in the 83 code cells across the two upstream
-reproducibility notebooks (`prep_simu_data.ipynb`,
+reproducibility notebooks we audited (`prep_simu_data.ipynb`,
 `fig4_VO_reproducibility.ipynb`) — visual inspection of plots is the only
-form of validation upstream provides.
+form of validation those notebooks provide. Scope: the reproducibility
+repository contains further notebooks (drug, gene-perturbation, sci-Plex and
+GBM workflows) that we did not audit; this statement covers the two
+notebooks that document the released checkpoint and the simulated benchmark
+assessed in this report.
 
 ---
 
