@@ -1,0 +1,100 @@
+# Reusability report: Squidiff reproduces as released but is silently undermined by undocumented preprocessing and a hardcoded sampling constant
+
+*[Author list and affiliations to be added]*
+
+*Linked article: He et al., Squidiff: predicting cellular development and responses to perturbations using a diffusion model. Nature Methods (2025). https://doi.org/10.1038/s41592-025-02877-y*
+
+---
+
+## Abstract
+
+Generative models that forecast how cell populations change over time are increasingly influential, yet are rarely examined outside their development settings. He et al. proposed Squidiff, a conditional diffusion model that predicts cellular development and perturbation responses from single-cell transcriptomes. Here we verify Squidiff's released artefacts and apply the method to a new task: temporal extrapolation in chimeric antigen receptor natural killer (CAR-NK) cells, predicting late post-infusion states from early ones. The released checkpoint and data reproduce exactly; the method installs and trains unmodified. Reuse on new data, however, meets three barriers: an undocumented preprocessing step that silently inverts conclusions, a conditional-generation branch that cannot run as released, and a hardcoded sampling constant that swamps the predicted trajectory without raising an error. Under the published protocol, Squidiff underperforms a per-gene Gaussian baseline on all three metrics across five seeds. We provide patches, regression tests and guidance for reuse.
+
+---
+
+Predicting how a cell population will look at a future time is a recurring need in cell therapy, developmental biology and drug-response modelling. Diffusion models are attractive for this task because they generate whole distributions rather than conditional means, and so can in principle preserve the heterogeneity that makes a population biologically meaningful. Squidiff, introduced by He et al., applies a conditional denoising diffusion model to single-cell transcriptomes and reports prediction both of cellular development and of responses to perturbation. The code installs from PyPI and the repository is public, which makes it a natural candidate for reuse.
+
+We asked a narrow question: trained on early post-infusion CAR-NK cells, can Squidiff predict the population at later time points that are held out entirely? This is a demanding but realistic setting — CAR-NK products are profiled longitudinally, samples are scarce, and the clinically important states are rare. A reusability report is the right vehicle for the answer, because what we found is less a verdict on the method than a map of where reuse on new data actually fails. Two of the three failures are silent, and both produced wrong conclusions in our own hands before we caught them.
+
+## The released artefacts reproduce
+
+We began by verifying what the authors released, before introducing any new data (Fig. 1a). The published checkpoint loads into the documented architecture with 62 tensors and 54,565,522 parameters, zero missing and zero unexpected keys, so a strict load would pass. Sampling 512 cells from it yields finite output that matches the authors' reference population with a multivariate energy distance of 2.10 (Fig. 2a). Installation from PyPI succeeded at the pinned version (commit `abdfc27`, v1.0.8), the model and diffusion objects built from the documented entry point, and training and DDIM sampling ran unmodified. The released artefacts, in short, work as released, and this is worth stating plainly: nothing that follows is a claim that the method is broken.
+
+One detail in the released data proved decisive later. The authors' own training matrix is log-normalized, with a mean of 1.78 and a maximum value of 14.5 (Fig. 2b). The released training script does not apply this transformation and the main repository does not state it; it appears only in the authors' separate reproducibility notebooks.
+
+## Barrier 1: an undocumented preprocessing step that inverts conclusions
+
+That single omission is the most dangerous barrier we met, because it is silent and it flips results. We first trained on raw counts, the natural default for a transcriptomics tool. We worked on GSE190976 (16,256 mouse CAR-NK cells), training on pre-infusion, day 7 and day 14 (11,588 cells, 13 samples) and holding out day 21 and day 28 (4,668 cells, 5 samples), with no sample on both sides and the top 500 highly variable genes fitted on training cells only. On raw counts, energy distance to the held-out population degraded monotonically as training progressed, from 321.6 at 5,000 steps to 412.2 at 20,000 and 432.5 at 50,000, while training loss fell throughout. Every conclusion we drew from that run — that the model degrades with training, that it fails to recover rare states — was wrong.
+
+Applying the upstream transformation, library-size normalization to 10,000 counts per cell followed by a log1p transform, reversed the picture (Fig. 3a). The same code, data, split and seed now improve with training, from 409.4 to 95.4 to 6.85, a 60-fold gain, and rare-state recall rises from 0.0 to 1.0. The generated output then sits on the same scale as the authors' released data (maximum 9.0 versus 14.5), where raw counts, with a maximum of 12,167, are three orders of magnitude away (Fig. 2b). The preprocessing step is therefore not optional, and because it is undocumented in the code path, a reuser has no signal that they have omitted it; they simply get a plausible-looking but inverted result. We stress that in this comparison the generation procedure is held fixed across the two conditions and serves only as a probe of output quality; the published prediction protocol is evaluated separately below. The effect itself is a property of the training data and the noise schedule, not of how the output is later conditioned.
+
+## The provided benchmark cannot catch this
+
+A reuser's natural check — validate the setup against the authors' own benchmark before trusting new data — is unavailable, because the provided benchmark cannot test the model. The upstream Gaussian simulation constructs three cell types that differ only by a global expression level, with mean expression 5.0, 8.0 and 10.0. The same library-size normalization the method requires removes exactly that signal, collapsing the three means to 50.0, 50.0 and 50.0 and dropping cell-type separability, measured by the silhouette coefficient, from 0.472 to −0.063 (Fig. 2c). After its own prescribed preprocessing the benchmark cannot distinguish its own classes. Compounding this, the reproducibility repository reports no quantitative metric anywhere in the 83 code cells of its two analysis notebooks, so there is no numeric target to reproduce against.
+
+## Barrier 2: a conditional branch that cannot run
+
+Squidiff is presented as a conditional model, but the conditional-generation path does not run as released. With `use_encoder=True` and `class_cond=True`, training fails on the first optimizer step, and three separate defects surface in a fixed cascade, each exposing the next (Fig. 1b). Conditioning labels leave the data loader as an int64 array, so the first linear layer raises a dtype error — the correct float call sits commented out on the line directly above. The labels are then not moved to the compute device although the model is, raising a CPU-versus-CUDA mismatch that is invisible on a CPU-only host. Finally, the label embedding is an `nn.Linear(1, hidden)` layer that expects rank-2 input but receives the rank-1 labels the loader produces. None of the three touches the diffusion process, the loss, the sampler or any hyperparameter. That all three raise immediately, and cascade, indicates the branch was never executed end to end, and the released configuration confirms this by setting `class_cond=False`. The development-prediction path we benchmark below uses the encoder with `class_cond=False`, so it avoids this branch; the barrier stands for anyone reusing Squidiff for conditional generation, its headline perturbation-response use. We record the corrections as three patches against the pinned commit, each with a regression test that turns red when its patch is reverted. This barrier is loud rather than silent: it blocks reuse at the first step, which is where most users would abandon the tool.
+
+## Barrier 3: a hardcoded sampling constant that fails silently
+
+The published mechanism for predicting development is not class-conditional sampling but linear extrapolation in the model's semantic latent space: encode two observed states, take their mean difference as a direction, step along it, and sample around the target point before decoding. That sampling step uses an absolute noise scale hardcoded at 0.7, and it fails silently. On the CAR-NK encoder the direction between day 7 and day 14 has norm 0.081, while a scale of 0.7 injects a latent perturbation of norm 5.4 — roughly 67 times the direction being extrapolated and 6.7 times the within-timepoint spread — without raising any error (Fig. 3b). Sweeping the constant spans a 47-fold range in energy distance. Selecting the scale on a validation task built only from training data (direction pre-infusion to day 7, scored against real day 14) chose 0.03, 0.0, 0.03, 0.03 and 0.0 across five seeds — none near the released default. A reuser who accepts the default gets degraded output and no indication why.
+
+## Performance under the published protocol
+
+With both silent barriers cleared, we evaluated Squidiff under its own published configuration and protocol, across five independently trained seeds and three metrics (Fig. 3c). Squidiff is worse than a per-gene Gaussian baseline, which carries only per-gene means and variances, on all three metrics in all five seeds. With the validation-selected noise scale, Squidiff reaches an energy distance of 27.15 ± 1.78 against the baseline's 4.26, a maximum mean discrepancy of 0.158 ± 0.008 against 0.058, and a per-gene mean correlation of 0.832 ± 0.013 against 0.938; it also trails a last-observation baseline on every metric. The third metric is invariant to affine rescaling of the output, so the gap is a genuine shortfall in captured structure rather than another scale artefact. At the released noise scale of 0.7 the model is far worse still (energy distance 1,244 ± 49); the maximum mean discrepancy there saturates the kernel and returns the same value for every seed, so we do not report it as a number.
+
+## Discussion
+
+The three barriers differ in kind, and the difference is the point. One is loud and blocking: the conditional branch simply does not run, so it can frustrate but not mislead. The other two are silent: undocumented preprocessing and a hardcoded sampling constant each let a reuser proceed all the way to a plausible, wrong answer. Both did exactly that to us. The preprocessing omission had us report that the model degrades with training when it in fact improves 60-fold, and we initially selected the noise scale against the test set before catching that leak. A check that stops at "does it install and run" will never catch either, which is precisely the gap a reusability report exists to fill.
+
+It would be a mistake to read this as a failed-method story. The released checkpoint and data reproduce exactly, the method installs and trains cleanly, and the defects we found are packaging and documentation faults, not evidence that the diffusion model is unsound. What our results do not support is the specific use we tested: under the published protocol, extrapolating a CAR-NK population forward does not beat a per-gene Gaussian baseline on any metric in any seed.
+
+Several boundaries apply. Our evidence rests on one dataset and one task. We test temporal extrapolation, not the perturbation-response setting that is the other half of the original work, and nothing here speaks to it. The extrapolation direction is estimated from only two timepoints, so the linear assumption may not fit a non-linear exhaustion trajectory. And the baseline is strong here for a structural reason: the CAR-NK population mean drifts little between the training and held-out windows, which favours a simple sampler and makes the task unfavourable to any generative model rather than indicting this one. A human CAR-NK dataset that would have provided a species check could not be obtained, and Docker was unavailable on the evaluation machine, so we pinned a virtual environment rather than a container image.
+
+## Outlook
+
+For anyone reusing Squidiff, four things follow. Log-normalize before training — library-size normalization to 10,000 counts per cell, then log1p — and treat the released data matrix, not the training script, as the statement of the required input. Apply the three patches before attempting conditional generation, since that branch does not run as released. Never accept the hardcoded latent noise scale; select it on a validation task built only from training data, as we do here, because the released default swamps the trajectory being predicted. And report a scale-invariant metric alongside any scale-sensitive one, since a single Euclidean metric alone cannot separate a scale artefact from a structural shortfall.
+
+More broadly, the most expensive failures we met were the cheapest to prevent. Each silent barrier was a one-line omission — a transform not applied, a constant left at its default — and each was found not by running the code harder but by checking a released artefact against an independent reference: the authors' own data scale, and a validation task held out from training. We would encourage both checks as routine when reusing a generative model, and would encourage authors to ship the preprocessing in the code path rather than in a notebook, and to treat a hardcoded constant as a liability to be documented, not a default to be inherited.
+
+---
+
+## Figure legends
+
+**Fig. 1 | Reusability assessment of Squidiff and the three points at which reuse fails**
+**a** Assessment workflow. Upstream is pinned at commit `abdfc27` (v1.0.8); the released checkpoint and its training data are verified before any new data is introduced; the upstream simulated benchmark is reproduced; the method is then applied to CAR-NK temporal extrapolation. Each barrier is drawn beside the step at which it surfaces. Green outline, the step that succeeded without intervention. Red, the three barriers.
+**b** The conditioning data path under `use_encoder = True` and `class_cond = True`, with the three defect sites marked i to iii. Each raises a `RuntimeError` on the first optimizer step, in the order shown, so correcting one exposes the next. The released configuration sets `class_cond = False`, so this path was not exercised upstream. Schematic; no measured values are plotted.
+
+**Fig. 2 | The released artefacts reproduce, but the upstream simulated benchmark cannot test them**
+**a** Distribution of expression values for 512 reference cells from the released training data (grey) and 512 cells generated from the released checkpoint (green outline), plotted as densities over the same bins. The checkpoint loads into the released architecture with 0 missing and 0 unexpected keys, so a strict load would pass; multivariate energy distance between the two populations is 2.10.
+**b** Value range of three datasets on a logarithmic axis. Dot, mean; tick, maximum. The authors' released training data (green, max 14.5) and CAR-NK data after `normalize_total` and `log1p` (blue, max 9.0) occupy the same scale; raw CAR-NK counts (red, max 12,167) are three orders of magnitude away.
+**c** Cell-type separability of the upstream Gaussian simulated benchmark through its own prescribed preprocessing, quantified as the silhouette coefficient over the three simulated types (n = 3,000 cells, 1,000 per type). Mean expression of each type is given beneath the stage label. The three types differ only by a global expression level, and library-size normalization removes exactly that, so separability falls from 0.472 to −0.063 and the benchmark can no longer distinguish them. Scope: the Gaussian simulation written by `prep_simu_data.ipynb`; the splatter dataset in the same notebook was not accessible and is not assessed. Source data are provided as a Source Data file.
+
+**Fig. 3 | Two silent barriers to reuse, and CAR-NK performance once both are cleared**
+**a** Energy distance to the held-out D21 and D28 cells against training budget, for models trained on raw counts (red) and on `normalize_total` + `log1p` data (blue). Code, data, split and seed are identical between the two series; only preprocessing differs. The undocumented step decides whether additional training improves the fit (409.4 to 6.85) or degrades it (321.6 to 432.5), while training loss falls in both.
+**b** Energy distance against the latent noise scale used by `sample_around_point`, for one trained model with everything else fixed. Red circle, the hardcoded upstream default of 0.7. Dotted lines, the values chosen independently for each seed on a validation task built only from training data. The constant spans a 47-fold range in score and raises no error at any setting.
+**c** Squidiff under the published protocol and configuration against two baselines, on three metrics. Filled circle, mean over five independently trained seeds (13, 37, 73, 101, 137); error bar, standard deviation; open circles, individual seeds. Solid line, conditional-mean sampler; dashed line, last-observation. Squidiff is worse than the conditional-mean baseline on all three metrics in all five seeds. Per-gene mean correlation is invariant to affine rescaling of the generated values, so the gap is not an artefact of output scale. MMD uses an RBF kernel whose bandwidth was fixed on training data (35.39); at the upstream noise scale the kernel saturates and returns mean(k_xx) for every seed, so that condition is deliberately not plotted.
+
+Split: training pre-infusion, D7 and D14, 11,588 cells from 13 samples; held out D21 and D28, 4,668 cells from 5 samples, with no sample on both sides. Feature selection retained the top 500 highly variable genes and was fitted on training cells only. Source data are provided as a Source Data file.
+
+---
+
+## Data availability
+
+The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure are available via Zenodo at [DOI to be minted on acceptance].
+
+## Code availability
+
+All scripts for data preparation, training, sampling, evaluation and figure generation are available via GitHub at https://github.com/nblvguohao/biomed-reusability-gate and archived via Zenodo at [DOI to be minted on acceptance]. The three compatibility patches against the pinned upstream commit are provided under `vendor/patches/squidiff/`, each with a regression test under `tests/regression/`. The original Squidiff source is available via GitHub at https://github.com/siyuh/Squidiff, pinned here at commit `abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8).
+
+---
+
+## References (provisional; to be completed and formatted)
+
+1. He, Y. et al. Squidiff: predicting cellular development and responses to perturbations using a diffusion model. *Nat. Methods* (2025). https://doi.org/10.1038/s41592-025-02877-y
+2. Ho, J., Jain, A. & Abbeel, P. Denoising diffusion probabilistic models. *Adv. Neural Inf. Process. Syst.* (2020).
+3. Song, J., Meng, C. & Ermon, S. Denoising diffusion implicit models. *Int. Conf. Learn. Represent.* (2021).
+4. Székely, G. J. & Rizzo, M. L. Energy statistics: a class of statistics based on distances. *J. Stat. Plan. Inference* (2013).
+5. [Full citation for the GSE190976 CAR-NK source study — to be added]
+6. [Citation for the maximum mean discrepancy / kernel two-sample test — to be added]

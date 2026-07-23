@@ -100,6 +100,9 @@ task unfavourable to a generative model rather than the model unfit.
 
 ## Still missing before submission
 
-Figures do not exist, only captions in the superseded draft. No Zenodo DOI. No
-reference list, Supplementary Information or Reporting Summary. Author list and
-affiliations. The perturbation-response half of the original work is untested.
+Figures now exist (`artifacts/manuscript_figures/`, built by
+`make_manuscript_figures.py`), and the main text is rewritten
+(`reusability_report.md`). Remaining: Zenodo DOI for code + artifacts;
+completed reference list (currently provisional); Supplementary Information and
+Nature Reporting Summary; author list and affiliations. The
+perturbation-response half of the original work is untested.

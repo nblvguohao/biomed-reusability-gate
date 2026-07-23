@@ -4,6 +4,9 @@
 circulated. It is kept only as a record of what the evidence looked like before
 two methodology errors were found.
 
+`reusability_report.md` is the **current live manuscript**, rewritten on the
+corrected evidence base. Submit that one.
+
 ## Retracted from the draft
 
 | Claim in the draft | Why it is wrong |
@@ -31,11 +34,21 @@ two methodology errors were found.
 - No quantitative metric appears anywhere in the reproducibility repository, in
   83 code cells across the two analysis notebooks.
 
-## Before rewriting
+## Rewriting checklist (all done)
 
-1. CAR-NK re-run under the published latent-extrapolation protocol (in progress).
-2. Multiple seeds. Every number so far is n=1.
-3. A second metric. Energy distance is currently the only one.
+1. CAR-NK re-run under the published latent-extrapolation protocol — done
+   (`carnk_latent_extrapolation.py`, released config `class_cond=False`).
+2. Multiple seeds — done, five seeds (`seed_study.py`).
+3. A second and third metric — done: MMD (RBF, bandwidth fixed on training
+   data) and a scale-invariant per-gene mean correlation.
+
+The rewritten manuscript is `reusability_report.md`. Note on protocol: the
+Barrier 1 preprocessing comparison (Fig. 3a) intentionally uses the
+class-conditional probe from `train_step_sweep.py`, held fixed across the two
+preprocessing conditions, because it isolates the training-data/noise-schedule
+effect without the 0.7 latent-noise confound that dominates Barrier 3. It is a
+training-pipeline A/B, not a prediction-performance claim; the published
+protocol is used for the performance result (Fig. 3c).
 
 ## Reproducing the current evidence
 
