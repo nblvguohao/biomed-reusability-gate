@@ -36,6 +36,24 @@ the workflow in Fig. 1a, not the order in which we happened to find them.
 | real moments | 25.92 / 73.07 | 1.24 / 1.42 |
 | rare-state recall at 50k | 0.0 | 1.0 |
 
+## Barrier 1, confirmed under the published protocol
+
+`latent_extrapolation_preprocessing_ab.py`, seed 13, released config
+(`class_cond=False`, `use_encoder=True`, `num_layers=3`, `diffusion_steps=1000`),
+noise scale fixed at 0.03 for both conditions and all budgets (not re-tuned, to
+keep this a single-variable A/B) — closes the gap left by the class-conditional
+probe above, which was chosen specifically to avoid the Barrier 3 noise-scale
+confound. This run repeats the same comparison under the actual
+latent-extrapolation protocol used for the performance result below.
+
+| | raw counts | log-normalized |
+|---|---|---|
+| pooled energy distance, 5k / 20k / 50k | 376.8 / 514.8 / 561.7 | 312.4 / 69.6 / 27.7 |
+| trend with training | degrades | improves 11.3-fold |
+
+Same direction as the class-conditional probe, now under the protocol that
+matters. Source data: `artifacts/squidiff_latent_extrap_ab/preprocessing_ab_metrics.json`.
+
 ## Barrier 2: a conditional branch that cannot run
 
 `vendor/patches/squidiff/`, `tests/regression/test_squidiff_patches.py`

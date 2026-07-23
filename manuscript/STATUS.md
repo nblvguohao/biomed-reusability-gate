@@ -50,6 +50,14 @@ effect without the 0.7 latent-noise confound that dominates Barrier 3. It is a
 training-pipeline A/B, not a prediction-performance claim; the published
 protocol is used for the performance result (Fig. 3c).
 
+That gap is now also closed directly: `latent_extrapolation_preprocessing_ab.py`
+repeats the raw-vs-log-normalized comparison under the exact published
+latent-extrapolation protocol, at a single fixed noise scale (0.03, chosen to
+avoid re-tuning) rather than 0.7. Same reversal: raw 376.8 -> 514.8 -> 561.7
+(degrades), log-normalized 312.4 -> 69.6 -> 27.7 (11.3-fold improvement). Cited
+in the main text as corroboration; source data at
+`artifacts/squidiff_latent_extrap_ab/preprocessing_ab_metrics.json`.
+
 ## Reproducing the current evidence
 
 ```
