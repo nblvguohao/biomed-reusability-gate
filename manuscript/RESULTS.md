@@ -21,16 +21,10 @@ out D21/D28 (4,668 cells, 5 samples), zero sample overlap.
 | released training data scale | mean 1.78, max 14.47, i.e. log-normalized |
 | released config | `class_cond=False`, `use_encoder=True`, `num_layers=3`, `gene_size=596`, 2,400 steps at batch 16 |
 
-## Barrier 1: a conditional branch that cannot run
+## Barrier 1: undocumented preprocessing
 
-`vendor/patches/squidiff/`, `tests/regression/test_squidiff_patches.py`
-
-Three defects on `use_encoder=True` + `class_cond=True`, each raising on the
-first optimizer step, in a fixed cascade. The released config sets
-`class_cond=False`, so the branch was never exercised upstream. Each patch has a
-regression test confirmed to turn red when reverted.
-
-## Barrier 2: undocumented preprocessing
+Barriers are numbered in the order a reuser meets them, which is the order of
+the workflow in Fig. 1a, not the order in which we happened to find them.
 
 `train_step_sweep.py --log_normalize`, `output_calibration.py`
 
@@ -41,6 +35,15 @@ regression test confirmed to turn red when reverted.
 | generated moments at 50k | 8.62 / 24.17 | 1.89 / 1.56 |
 | real moments | 25.92 / 73.07 | 1.24 / 1.42 |
 | rare-state recall at 50k | 0.0 | 1.0 |
+
+## Barrier 2: a conditional branch that cannot run
+
+`vendor/patches/squidiff/`, `tests/regression/test_squidiff_patches.py`
+
+Three defects on `use_encoder=True` + `class_cond=True`, each raising on the
+first optimizer step, in a fixed cascade. The released config sets
+`class_cond=False`, so the branch was never exercised upstream. Each patch has a
+regression test confirmed to turn red when reverted.
 
 ## Barrier 3: a hardcoded sampling constant
 
