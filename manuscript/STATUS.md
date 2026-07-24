@@ -90,15 +90,25 @@ Done and committed:
 - **Code Zenodo DOI**: minted and verified resolving —
   `10.5281/zenodo.21510468` (published record, "v1.0.0 — Squidiff
   reusability report submission", 2026-07-23). Filled into
-  `reusability_report.md` and `REPORTING_SUMMARY.md`. **Open concern**: the
-  Phase 2 robustness work and the VO structure-metric replication (commits
-  `b685d67` onward) may postdate that tag — confirm and, if so, cut a new
-  release before submission so the archived snapshot matches the
-  manuscript (see `ZENODO_HOWTO.md`).
-- **Data Zenodo DOI**: not yet minted — the `zenodo_upload/` deposit has
-  not been uploaded. `reusability_report.md`'s Data availability statement
-  now reads "DOI to be added before submission" rather than a placeholder
-  bracket, pending that upload.
+  `reusability_report.md` and `REPORTING_SUMMARY.md`. Confirmed the
+  `v1.0.0` archive predated the Phase 2 robustness work and VO
+  structure-metric replication (14 commits, `b685d67`..`e3b2c2e`) — **all
+  now pushed to `origin/feat/biomed-reusability-gate`**, branch fully in
+  sync. Cutting a `v1.0.1` GitHub release is the only step left to refresh
+  the archive; that release itself must be done on GitHub's web UI
+  (walkthrough in `ZENODO_HOWTO.md` Part 1).
+- **Data Zenodo DOI**: not yet minted. The local package is rebuilt and
+  complete — `zenodo_upload/` now has 14 zips (3.4 GB): the original 10,
+  `10_manuscript_figures.zip` refreshed to the current figures, and three
+  new ones (`11_vo_positive_control`, `12_baseline_provenance`,
+  `13_evaluation_robustness`) covering everything from this session. Also
+  fixed a real bug found while rebuilding: `README.md` was written without
+  an explicit encoding, corrupting every em dash on Windows — now UTF-8.
+  Uploading to the existing draft (`zenodo.org/uploads/21510503`) and
+  publishing is the only step left; that must be done on Zenodo's web UI
+  (walkthrough in `ZENODO_HOWTO.md` Part 2). `reusability_report.md`'s Data
+  availability statement reads "DOI to be added before submission" until
+  then.
 - **Author contributions**: confirmed by all authors.
 - **Original-author contact**: decided — **not contacted**. If NMI's
   editorial process expects notification of He et al., that should be
@@ -107,12 +117,15 @@ Done and committed:
   transcription into NMI's actual fillable PDF form is still a mechanical
   step for whoever submits.
 
-Remaining before submission: upload the data deposit and mint its DOI;
-confirm the code deposit is current (see above); transcribe
-REPORTING_SUMMARY.md into the journal's actual form. Pre-existing failure
-retained: tests/regression GPU step (test_training_step_runs_on_gpu) fails
-identically on clean HEAD (numpy/torch drift in .venv310; out of revision
-scope).
+Remaining before submission — both are GitHub/Zenodo web-UI steps, not
+locally executable: (1) cut GitHub release `v1.0.1` so Zenodo archives a
+current code snapshot, then send the new version DOI for it to be swapped
+into the manuscript; (2) upload the 14 files in `zenodo_upload/` to the
+existing draft at `zenodo.org/uploads/21510503` and publish, then send the
+resulting DOI. After both: transcribe REPORTING_SUMMARY.md into the
+journal's actual form. Pre-existing failure retained: tests/regression GPU
+step (test_training_step_runs_on_gpu) fails identically on clean HEAD
+(numpy/torch drift in .venv310; out of revision scope).
 
 ## Retracted from the draft
 
