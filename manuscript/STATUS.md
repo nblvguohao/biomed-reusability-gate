@@ -50,7 +50,15 @@ Done and committed:
     overlap between any Squidiff seed and either baseline), leave-one-
     sample-out (ordering holds in all 25 folds), baseline resampling
     dispersion (an order of magnitude below the seed-to-seed spread).
-    Supp. Note 9.
+    Supp. Note 9. **Scoping note**: the TDD's Task 2.2 also asked for
+    "≥2 alternative group-held-out splits" — read literally, that means
+    retraining under different train/test partitions, which would mean
+    5 more Squidiff models per alternative split (GPU-hours). We
+    substituted leave-one-held-out-sample-out re-scoring, which tests the
+    same concern (is the ordering driven by one atypical held-out sample)
+    without retraining, at effectively zero extra cost given the cached
+    populations. If reviewers want a literal alternative-split retrain,
+    that is still open.
   - **MMD bandwidth sensitivity**: ordering flips at 0.25×/0.5× bandwidth
     (Squidiff wins) versus 1×/2×/4× (baseline wins) — MMD demoted from
     headline metric to Supp. Table 4 sensitivity check; Fig. 3c middle panel
