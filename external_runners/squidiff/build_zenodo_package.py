@@ -106,6 +106,21 @@ FILES: list[tuple[str, str]] = [
 
     # ── Manuscript figures and their source data ──
     ("manuscript_figures", "10_manuscript_figures"),
+
+    # ── Positive control on the authors' own released setting (Supp. Notes 8, 11) ──
+    ("positive_control/positive_control_metrics.json",
+     "11_vo_positive_control/positive_control_metrics.json"),
+    ("positive_control/structure_metrics.json",
+     "11_vo_positive_control/structure_metrics.json"),
+
+    # ── Baseline fit-set provenance and energy-distance decomposition (Supp. Note 7) ──
+    ("baseline_provenance/baseline_provenance.json",
+     "12_baseline_provenance/baseline_provenance.json"),
+
+    # ── Phase 2: null anchors, bootstrap CIs, LOSO, MMD grid, structure (Supp. Notes 9-10) ──
+    ("evaluation_robustness/robustness.json",
+     "13_evaluation_robustness/robustness.json"),
+    ("evaluation_robustness/generated", "13_evaluation_robustness/generated"),
 ]
 
 MANIFEST_HEADER = """\
@@ -142,6 +157,14 @@ cited via its original figshare DOI (10.6084/m9.figshare.27948633).
 | `08_barrier3_noise_scale/` | Barrier 3, Fig. 3b | `latent_noise_scale_sweep.py` |
 | `09_seed_study/` | Performance under the published protocol, Fig. 3c | `seed_study.py` |
 | `10_manuscript_figures/` | Figures 1-3 and their source data | `make_manuscript_figures.py` |
+| `11_vo_positive_control/` | "The same ordering holds on the authors' own released setting"; Supp. Notes 8, 11 | `positive_control.py`, `positive_control_structure.py` |
+| `12_baseline_provenance/` | Baseline fit sets and the energy-distance decomposition; Supp. Note 7 | `baseline_provenance.py` |
+| `13_evaluation_robustness/` | Null anchors, bootstrap CIs, leave-one-sample-out, MMD bandwidth grid, structure metrics; Supp. Notes 9, 10 | `evaluation_robustness.py` |
+
+Note on naming: `02_positive_control/` predates the term's later, narrower use
+in the manuscript — it holds the released-checkpoint verification ("The
+released artefacts reproduce"), not the baseline comparison on the authors'
+own VO setting. That analysis is `11_vo_positive_control/`.
 
 ## Regenerating from scratch
 
@@ -150,6 +173,9 @@ GSE190976 accession; nothing here is a primary data source in its own right.
 `06_barrier1_published_protocol/` reuses the log-normalized budget sweep at
 `07_latent_extrapolation_budget_sweep/` for its log-normalized arm rather than
 duplicating it (see `latent_extrapolation_preprocessing_ab.py`).
+`13_evaluation_robustness/generated/` caches the five seed models'
+validation-selected populations, re-decoded once so later robustness checks
+are CPU-only; see `evaluation_robustness.py::regenerate_populations`.
 
 """
 
@@ -187,7 +213,7 @@ def build(dry_run: bool = False) -> None:
             print(f"  {m}")
 
     if not dry_run:
-        (PACKAGE / "README.md").write_text(MANIFEST_HEADER)
+        (PACKAGE / "README.md").write_text(MANIFEST_HEADER, encoding="utf-8")
 
     print(f"\nTotal: {total_bytes / 1e9:.2f} GB across {len(FILES) - len(missing)} entries")
     if dry_run:
