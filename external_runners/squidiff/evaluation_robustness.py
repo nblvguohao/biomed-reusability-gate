@@ -86,9 +86,20 @@ def correlation_frobenius_distance(real: np.ndarray, gen: np.ndarray) -> float:
     A diagonal (per-gene independent) sampler has zero off-diagonal
     covariance by construction, so it cannot win this metric on data with
     real gene-gene correlation.
+
+    Genes with zero variance in `real` are dropped before computing either
+    matrix: Pearson correlation is undefined for a constant variable, so
+    `np.corrcoef` returns NaN for that gene's row and column regardless of
+    `gen`, which would silently turn the whole score into NaN. The released
+    VO data has two such genes (exactly zero across the entire held-out
+    population) out of 596; CAR-NK's HVG-selected genes have none.
     """
     real = np.asarray(real, dtype=np.float64)
     gen = np.asarray(gen, dtype=np.float64)
+    keep = real.std(axis=0) > 0
+    if keep.sum() < 2:
+        raise ValueError("fewer than 2 genes with nonzero variance in `real`")
+    real, gen = real[:, keep], gen[:, keep]
     cr = np.corrcoef(real, rowvar=False)
     cg = np.corrcoef(gen, rowvar=False)
     return float(np.linalg.norm(cr - cg, ord="fro"))

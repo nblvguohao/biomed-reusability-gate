@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "external_runners" / "squidiff"))
 
@@ -100,6 +101,30 @@ def test_correlation_frobenius_distance_catches_structure():
     assert correlation_frobenius_distance(real, real) < 1e-9
     d = correlation_frobenius_distance(real, gen)
     assert d > 1.0, "diagonal sampler must be exposed on correlated data"
+
+
+def test_correlation_frobenius_distance_ignores_zero_variance_real_genes():
+    """A gene that never varies in `real` must not poison the whole score.
+
+    Pearson correlation is undefined for a constant variable, so
+    np.corrcoef silently returns NaN for that gene's row/col; without a
+    guard, one such gene makes the Frobenius norm NaN regardless of how
+    well every other gene is matched. This happened on the real VO
+    released data (2 of 596 genes are exactly zero across the whole
+    held-out population) and must not recur.
+    """
+    rng = np.random.RandomState(13)
+    base = rng.randn(400, 1)
+    real = np.hstack([base + 0.1 * rng.randn(400, 1) for _ in range(4)])
+    real = np.hstack([real, np.zeros((400, 1))])  # gene 5: constant in real
+    gen4 = rng.randn(400, 4) * real[:, :4].std(axis=0) + real[:, :4].mean(axis=0)
+    gen = np.hstack([gen4, rng.randn(400, 1)])  # gen varies on that gene; must not matter
+
+    d = correlation_frobenius_distance(real, gen)
+    assert np.isfinite(d), "a constant real gene must not turn the score into NaN"
+    # Must equal the score computed after manually dropping the dead gene.
+    expected = correlation_frobenius_distance(real[:, :4], gen[:, :4])
+    assert d == pytest.approx(expected)
 
 
 def test_cluster_mass_recall_perfect_for_identical_population():
