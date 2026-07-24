@@ -88,27 +88,20 @@ Done and committed:
 ## 2026-07-24 submission-status update
 
 - **Code Zenodo DOI**: minted and verified resolving —
-  `10.5281/zenodo.21510468` (published record, "v1.0.0 — Squidiff
-  reusability report submission", 2026-07-23). Filled into
-  `reusability_report.md` and `REPORTING_SUMMARY.md`. Confirmed the
-  `v1.0.0` archive predated the Phase 2 robustness work and VO
-  structure-metric replication (14 commits, `b685d67`..`e3b2c2e`) — **all
-  now pushed to `origin/feat/biomed-reusability-gate`**, branch fully in
-  sync. Cutting a `v1.0.1` GitHub release is the only step left to refresh
-  the archive; that release itself must be done on GitHub's web UI
-  (walkthrough in `ZENODO_HOWTO.md` Part 1).
+  `10.5281/zenodo.21525939` (v1.0.1, published 2026-07-24 — supersedes the
+  earlier `v1.0.0` / `10.5281/zenodo.21510468`, which predated the Phase 2
+  robustness work and VO structure-metric replication). Filled into
+  `reusability_report.md` and `REPORTING_SUMMARY.md`. Both Zenodo DOI items
+  are now closed.
 - **Data Zenodo DOI**: minted and verified resolving —
   `10.5281/zenodo.21510503` (published record, "Squidiff CAR-NK
   reusability report — model checkpoints, splits, and figure source data",
-  v1, 2026-07-23, CC BY 4.0). Filled into `reusability_report.md` and
-  `REPORTING_SUMMARY.md` §3. Package: 13 zips + README (~3.5 GB) — the
-  original 10, `10_manuscript_figures.zip` refreshed to the current
-  figures, and three new ones (`11_vo_positive_control`,
-  `12_baseline_provenance`, `13_evaluation_robustness`) covering everything
-  from the Phase 2 session. **Worth a self-check**: the fetch used to
-  verify this record showed only one author name — confirm the full
-  7-author list made it into the Zenodo metadata (the record can't be
-  silently corrected after publication; a mismatch needs a new version).
+  v1, 2026-07-23, CC BY 4.0, single author by deliberate choice). Filled
+  into `reusability_report.md` and `REPORTING_SUMMARY.md` §3. Package: 13
+  zips + README (~3.5 GB) — the original 10, `10_manuscript_figures.zip`
+  refreshed to the current figures, and three new ones
+  (`11_vo_positive_control`, `12_baseline_provenance`,
+  `13_evaluation_robustness`) covering everything from the Phase 2 session.
 - **Author contributions**: confirmed by all authors.
 - **Original-author contact**: decided — **not contacted**. If NMI's
   editorial process expects notification of He et al., that should be
@@ -117,14 +110,11 @@ Done and committed:
   transcription into NMI's actual fillable PDF form is still a mechanical
   step for whoever submits.
 
-Remaining before submission: (1) cut GitHub release `v1.0.1` so Zenodo
-archives a current code snapshot (the only outstanding DOI item — data DOI
-is done), then send the new version DOI for it to be swapped into the
-manuscript; (2) double-check the Zenodo data record's author list is
-complete (see note above); (3) transcribe REPORTING_SUMMARY.md into the
-journal's actual form. Pre-existing failure retained: tests/regression GPU
-step (test_training_step_runs_on_gpu) fails identically on clean HEAD
-(numpy/torch drift in .venv310; out of revision scope).
+Both Zenodo DOIs are done. Remaining before submission: transcribe
+REPORTING_SUMMARY.md into the journal's actual form. Pre-existing failure
+retained: tests/regression GPU step (test_training_step_runs_on_gpu) fails
+identically on clean HEAD (numpy/torch drift in .venv310; out of revision
+scope).
 
 ## Retracted from the draft
 

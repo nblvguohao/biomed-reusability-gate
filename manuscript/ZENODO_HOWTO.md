@@ -1,25 +1,21 @@
 # Getting the two Zenodo DOIs
 
-## Status (2026-07-24, updated)
+## Status (2026-07-24, updated) — both DOIs done
 
-- **Part 2 (data) is done.** Data DOI: `10.5281/zenodo.21510503`, verified
-  resolving — a published record titled "Squidiff CAR-NK reusability
-  report — model checkpoints, splits, and figure source data" (v1, CC BY
-  4.0). Filled into `reusability_report.md` (Data availability) and
-  `REPORTING_SUMMARY.md` §3. **Worth double-checking**: the verification
-  fetch surfaced only one author name — log in and confirm the full
-  7-author list is actually there, since Zenodo metadata can't be
-  silently corrected after publication (a fix needs a new version).
-- **Part 1 (code) is the one remaining item.** `origin/feat/biomed-
-  reusability-gate` is fully up to date (all 14 pending commits pushed —
-  Phase 2 robustness, VO structure replication, the
-  correlation_frobenius_distance NaN fix, and this DOI paperwork), but the
-  archived Zenodo snapshot (`10.5281/zenodo.21510468`, tagged `v1.0.0`,
-  2026-07-23) predates all of that. **What's left is entirely on GitHub's
-  web UI**: draft and publish a `v1.0.1` release so Zenodo archives a fresh
-  snapshot. Walkthrough in Part 1 below (steps 4-7 — 1-3 are already done
-  from when `v1.0.0` was cut). Once published, send me the new version DOI
-  and I'll swap it into the manuscript.
+- **Part 2 (data)**: `10.5281/zenodo.21510503`, verified resolving —
+  "Squidiff CAR-NK reusability report — model checkpoints, splits, and
+  figure source data" (v1, CC BY 4.0). Single author by deliberate choice.
+  Filled into `reusability_report.md` (Data availability) and
+  `REPORTING_SUMMARY.md` §3.
+- **Part 1 (code)**: `10.5281/zenodo.21525939` (v1.0.1, published
+  2026-07-24), verified resolving — supersedes the earlier `v1.0.0` /
+  `10.5281/zenodo.21510468`, which predated the Phase 2 robustness work and
+  VO structure-metric replication. `origin/feat/biomed-reusability-gate`
+  was fully pushed and in sync before this release was cut. Filled into
+  `reusability_report.md` (Code availability) and `REPORTING_SUMMARY.md`.
+
+Both walkthroughs below are kept for reference (e.g. cutting a future
+`v1.0.2` / new data version).
 
 ### What's staged, ready to upload (`zenodo_upload/`, 3.4 GB, 14 files + README)
 
@@ -56,11 +52,10 @@ Both use the same Zenodo account.
 
 ---
 
-## Part 1 — Code DOI (GitHub → Zenodo integration)
+## Part 1 — Code DOI (GitHub → Zenodo integration) — DONE
 
-Steps 1-3 are already done (from cutting `v1.0.0`) — the GitHub↔Zenodo
-integration is authorized and the repository toggle is on. All that's left
-is step 4 onward, to cut `v1.0.1`.
+**Published**: `10.5281/zenodo.21525939` (v1.0.1). Kept below for
+reference (e.g. cutting a future `v1.0.2`).
 
 1. ~~Go to https://zenodo.org and log in with GitHub.~~ Done.
 2. ~~Go to https://zenodo.org/account/settings/github/.~~ Done.
@@ -84,16 +79,15 @@ is step 4 onward, to cut `v1.0.1`.
    entry now shows a DOI badge. Click through to the Zenodo record.
 6. The record page shows two identifiers:
    - a **version DOI** (resolves to exactly this release — `10.5281/zenodo.21510468`
-     is the `v1.0.0` version DOI already in the manuscript; `v1.0.1` will get
-     its own, different version DOI)
+     was the `v1.0.0` version DOI, `10.5281/zenodo.21525939` is `v1.0.1`'s;
+     each new release gets its own, different version DOI)
    - a **concept DOI** (always resolves to whatever the latest release is —
      use this one if you expect to cut further releases later and want a
      single stable citation)
-   For a Reusability Report, cite the **version DOI** in the manuscript, since
-   you want the reviewed record to point at an immutable snapshot — send me
-   the new `v1.0.1` version DOI once you have it, and I'll replace
-   `10.5281/zenodo.21510468` in `reusability_report.md` and
-   `REPORTING_SUMMARY.md` and re-verify it resolves.
+   For a Reusability Report, cite the **version DOI** in the manuscript,
+   since you want the reviewed record to point at an immutable snapshot —
+   if you cut a further release, send the new version DOI and it'll be
+   swapped in and re-verified the same way.
 7. Optional: copy the Markdown DOI badge Zenodo offers and paste it into the
    GitHub README, so anyone landing on the repo sees the citable DOI.
 
@@ -145,10 +139,14 @@ expect that wrapper folder when you unzip locally to check a file.
      builds on.
    - **Keywords**: `single-cell RNA-seq`, `diffusion model`, `reusability`,
      `Squidiff`, `CAR-NK`.
-   - **Related/alternate identifiers**: add `10.5281/zenodo.21510468` (the
-     code DOI, already minted) as "is supplement to" / "cites" — Zenodo
-     cross-links the two records both directions. Add the manuscript's own
-     DOI here too, once assigned (preprint or final).
+   - **Related/alternate identifiers**: add `10.5281/zenodo.21525939` (the
+     code DOI) as "is supplement to" / "cites" — Zenodo cross-links the two
+     records both directions. Add the manuscript's own DOI here too, once
+     assigned (preprint or final). Note: the data record was published
+     before the code DOI was updated to `v1.0.1` — worth checking whether
+     this field references the old `10.5281/zenodo.21510468` and, if so,
+     whether Zenodo lets you correct it in place or requires a new version
+     (not verified either way here).
    - **Funding**: if the submission system asks, enter the three grants from
      the Acknowledgements section (NSFC 32472007 / 62301006 / 62301008;
      Anhui Province NSF 2308085MF217 / 2308085QF202).
@@ -172,18 +170,15 @@ a citable numbered reference instead.
 If a dataset-citation entry is wanted later, the convention is:
 `[Creators] ([Year]) [Title]. Zenodo. [DOI]`.
 
-## Unresolved / to confirm
+## Resolved
 
-- **Code snapshot currency**: the published `v1.0.0` tag (2026-07-23)
-  predates the Phase 2 / VO-replication commits — confirmed, not just
-  suspected (all 14 commits are now on `origin`). Cut `v1.0.1` before
-  submission so the archived code matches the paper (Part 1 above).
-- Whether to merge `feat/biomed-reusability-gate` into `main` before tagging
-  `v1.0.1`, or tag the feature branch directly. Either works technically;
-  merging first is the more conventional signal that this is the reviewed
-  state of the repository.
-- **Data deposit author list**: the verification fetch of
-  `10.5281/zenodo.21510503` surfaced only one author name where all seven
-  were intended — log in and confirm the full list actually made it into
-  the metadata (a correction after publication requires a new version, so
-  worth checking now rather than at submission).
+- **Code snapshot currency**: `v1.0.1` (`10.5281/zenodo.21525939`)
+  published 2026-07-24, after all 14 pending commits were pushed. Current.
+- **Data deposit author list**: the single author on
+  `10.5281/zenodo.21510503` is a deliberate choice, not an oversight — the
+  full 7-author list is on the manuscript itself, which is what governs
+  authorship credit; the Zenodo record's author field doesn't need to
+  duplicate it.
+
+Nothing outstanding on either DOI. Both are closed items — see `STATUS.md`
+for what (non-Zenodo) work remains before submission.

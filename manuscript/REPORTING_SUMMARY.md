@@ -50,12 +50,10 @@ single-cell dataset (GSE190976) was generated and deposited by Li et al.
   (`vendor/patches/squidiff/`, each with a regression test).
 - All custom analysis code is available at
   https://github.com/nblvguohao/biomed-reusability-gate (archived via
-  Zenodo, DOI: 10.5281/zenodo.21510468). **Before submission, confirm this
-  archived snapshot is current** — it was published 2026-07-23 and several
-  commits (the Phase 2 statistical-robustness work and the VO structure-
-  metric replication) landed after that date; if the Zenodo deposit predates
-  them, cut a new version/release so the archived code matches what the
-  manuscript describes.
+  Zenodo, DOI: 10.5281/zenodo.21525939, v1.0.1, published 2026-07-24,
+  verified resolving — supersedes the earlier v1.0.0 snapshot, which
+  predated the Phase 2 statistical-robustness work and the VO
+  structure-metric replication).
 
 ## 3. Data
 
@@ -113,12 +111,10 @@ generated GSE190976.
 
 - Content is complete and internally consistent with `RESULTS.md` and
   `FIGURE_LEGENDS.md`. Author contributions (main text) are confirmed.
-- Both DOIs are now minted, verified resolving: data (§3)
-  10.5281/zenodo.21510503, code (§2) 10.5281/zenodo.21510468. One item
-  remains before submission: the code deposit was published 2026-07-23 and
-  analysis work continued after that — confirm a current snapshot has been
-  archived (cut a `v1.0.1` GitHub release if not; see `ZENODO_HOWTO.md`)
-  before treating this as final.
+- Both DOIs are minted and verified resolving: data (§3)
+  10.5281/zenodo.21510503 (single-author record — an intentional choice,
+  not an oversight), code (§2) 10.5281/zenodo.21525939 (v1.0.1, published
+  2026-07-24, current as of that date). Both Zenodo items are closed.
 - Confirm the funding-grant numbers are transcribed correctly into the
   submission system's own funder-lookup field (some systems require
   choosing a matched funder name from a dropdown rather than free text).

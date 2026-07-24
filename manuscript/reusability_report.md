@@ -117,7 +117,7 @@ The single-cell data analysed in this study are publicly available from the Gene
 
 ## Code availability
 
-All scripts for data preparation, training, sampling, evaluation and figure generation are available via GitHub at https://github.com/nblvguohao/biomed-reusability-gate and archived via Zenodo at https://doi.org/10.5281/zenodo.21510468. The three compatibility patches against the pinned upstream commit are provided under `vendor/patches/squidiff/`, each with a regression test under `tests/regression/`. The original Squidiff source is available via GitHub at https://github.com/siyuh/Squidiff, pinned here at commit `abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8).
+All scripts for data preparation, training, sampling, evaluation and figure generation are available via GitHub at https://github.com/nblvguohao/biomed-reusability-gate and archived via Zenodo at https://doi.org/10.5281/zenodo.21525939 (v1.0.1). The three compatibility patches against the pinned upstream commit are provided under `vendor/patches/squidiff/`, each with a regression test under `tests/regression/`. The original Squidiff source is available via GitHub at https://github.com/siyuh/Squidiff, pinned here at commit `abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8).
 
 ---
 
