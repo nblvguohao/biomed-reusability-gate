@@ -99,15 +99,26 @@ def _synthetic_root(tmp_path: Path) -> Path:
         dst = root / "artifacts" / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO_ROOT / "artifacts" / rel, dst)
-    null_anchor = {
-        "energy_distance": {"mean": 0.11, "q95": 0.22},
-        "mmd_rbf": {"mean": 0.004, "q95": 0.009},
-        "mean_expression_correlation": {"mean": 0.998, "q05": 0.995},
-        "note": "synthetic test values",
+    robustness = {
+        "null_anchor": {
+            "energy_distance": {"mean": 0.11, "q95": 0.22},
+            "mmd_rbf": {"mean": 0.004, "q95": 0.009},
+            "mean_expression_correlation": {"mean": 0.998, "q05": 0.995},
+            "note": "synthetic test values",
+        },
+        "structure": {
+            "conditional_mean": {"correlation_frobenius": 266.0, "rare_cluster_recall": 0.34},
+            "last_observation_d14": {"correlation_frobenius": 79.0, "rare_cluster_recall": 1.0},
+            "squidiff_seed_13": {"correlation_frobenius": 145.0, "rare_cluster_recall": 1.0},
+            "squidiff_seed_37": {"correlation_frobenius": 141.0, "rare_cluster_recall": 1.0},
+            "squidiff_seed_73": {"correlation_frobenius": 131.0, "rare_cluster_recall": 0.93},
+            "squidiff_seed_101": {"correlation_frobenius": 127.0, "rare_cluster_recall": 1.0},
+            "squidiff_seed_137": {"correlation_frobenius": 144.0, "rare_cluster_recall": 0.93},
+        },
     }
     rob_dir = root / "artifacts" / "evaluation_robustness"
     rob_dir.mkdir(parents=True, exist_ok=True)
-    (rob_dir / "robustness.json").write_text(json.dumps({"null_anchor": null_anchor}))
+    (rob_dir / "robustness.json").write_text(json.dumps(robustness))
     return root
 
 
@@ -128,8 +139,28 @@ def test_fig3c_carries_null_anchor_when_robustness_exists(tmp_path):
     assert got["mean_expression_correlation"] == {"mean": 0.998, "q05": 0.995}
 
 
-def test_fig3c_tolerates_missing_robustness(tmp_path):
-    """Without robustness.json the figure still builds, with a null marker."""
+def test_fig3c_middle_panel_is_structure_not_mmd(tmp_path):
+    """MMD is demoted (its Squidiff-baseline ordering flips with bandwidth);
+    the middle panel must be the gene-gene correlation structure distance."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    from make_manuscript_figures import figure3
+
+    root = _synthetic_root(tmp_path)
+    result = figure3(root, tmp_path / "out")
+
+    assert result["c_metrics"][1] == "correlation_frobenius", (
+        "the middle panel of Fig. 3c must be the structure metric, not MMD"
+    )
+    structure = result["c_structure"]
+    assert structure["squidiff_values"] == [145.0, 141.0, 131.0, 127.0, 144.0]
+    assert structure["conditional_mean"] == 266.0
+    assert structure["last_observation_d14"] == 79.0
+
+
+def test_fig3c_requires_robustness(tmp_path):
+    """The final panel c (null band + structure metric) needs robustness.json."""
     import matplotlib
 
     matplotlib.use("Agg")
@@ -137,5 +168,7 @@ def test_fig3c_tolerates_missing_robustness(tmp_path):
 
     root = _synthetic_root(tmp_path)
     (root / "artifacts" / "evaluation_robustness" / "robustness.json").unlink()
-    result = figure3(root, tmp_path / "out")
-    assert result["c_null_anchor"] is None
+    import pytest
+
+    with pytest.raises(FileNotFoundError):
+        figure3(root, tmp_path / "out")

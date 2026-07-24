@@ -376,29 +376,41 @@ def figure3(root: Path, out_dir: Path) -> dict:
         "conditional_mean": prov["baselines"]["conditional_mean"]["scores"],
         "last_observation": prov["baselines"]["last_observation_true_d14_resample"]["scores"],
     }
-    # Same-distribution reference band (Phase 2.1): random halves of the
-    # held-out population scored against each other. Absent until the
-    # robustness pass has run; the figure builds either way.
-    rob_path = root / "artifacts/evaluation_robustness/robustness.json"
-    null_anchor = json.loads(rob_path.read_text())["null_anchor"] if rob_path.exists() else None
+    # Same-distribution reference band and structure metrics (Phase 2). The
+    # final panel c needs both: MMD is demoted to a supplementary sensitivity
+    # analysis because its Squidiff-baseline ordering flips with bandwidth,
+    # and the middle panel is the gene-gene correlation structure distance.
+    rob = json.loads((root / "artifacts/evaluation_robustness/robustness.json").read_text())
+    null_anchor = rob["null_anchor"]
+    structure = rob["structure"]
+    seed_order = [13, 37, 73, 101, 137]
+    frob_vals = [structure[f"squidiff_seed_{s}"]["correlation_frobenius"] for s in seed_order]
     metrics = [
         ("energy_distance", "Energy distance", True, "lower is better"),
-        ("mmd_rbf", "MMD (RBF)", False, "lower is better"),
+        ("correlation_frobenius", "Gene–gene correlation distance", False, "lower is better"),
         ("mean_expression_correlation", "Per-gene mean correlation", False, "higher is better"),
     ]
     jitter = np.random.RandomState(0).normal(0, 0.05, 5)
     for ax, (key, title, logscale, hint) in zip(ax_c, metrics, strict=True):
-        vals = S[f"validation_selected.{key}"]["values"]
-        mean, sd = S[f"validation_selected.{key}"]["mean"], S[f"validation_selected.{key}"]["std"]
+        if key == "correlation_frobenius":
+            # Structure values live in the robustness pass, not the seed study.
+            vals = frob_vals
+            mean = float(np.mean(vals))
+            sd = float(np.std(vals, ddof=1))
+            base_pair = (structure["conditional_mean"]["correlation_frobenius"],
+                         structure["last_observation_d14"]["correlation_frobenius"])
+        else:
+            vals = S[f"validation_selected.{key}"]["values"]
+            mean, sd = S[f"validation_selected.{key}"]["mean"], S[f"validation_selected.{key}"]["std"]
+            base_pair = (base["conditional_mean"][key], base["last_observation"][key])
         # Points, not bars: a bar on a log axis encodes length from an arbitrary floor.
         ax.errorbar([0], [mean], yerr=[sd], fmt="o", ms=6, color=C["correct"],
                     ecolor=C["correct"], elinewidth=1.1, capsize=3.5, capthick=1.1, zorder=3)
         ax.plot(jitter, vals, "o", ms=2.8, mfc=C["correct_soft"], mec=C["correct"],
                 mew=0.5, zorder=2)
-        for name, col, ls in (("conditional_mean", C["ink"], "-"),
-                              ("last_observation", C["neutral_mid"], "--")):
-            ax.axhline(base[name][key], color=col, ls=ls, lw=1.0, zorder=1)
-        if null_anchor is not None:
+        for value, col, ls in zip(base_pair, (C["ink"], C["neutral_mid"]), ("-", "--"), strict=True):
+            ax.axhline(value, color=col, ls=ls, lw=1.0, zorder=1)
+        if key in null_anchor:
             n = null_anchor[key]
             lo_band, hi_band = (n["q05"], 1.0) if key == "mean_expression_correlation" \
                 else (0.0, n["q95"])
@@ -412,7 +424,8 @@ def figure3(root: Path, out_dir: Path) -> dict:
         ax.text(0.5, -0.13, hint, transform=ax.transAxes, fontsize=5.8,
                 color=C["neutral_dark"], ha="center")
     ax_c[0].set_ylabel("Value across 5 seeds")
-    ax_c[0].set_ylim(0.03, 40)
+    ax_c[0].set_ylim(0.02, 40)
+    ax_c[1].set_ylim(0, 300)
     ax_c[2].set_ylim(0.75, 1.0)
     # One shared key rather than three sets of colliding inline labels.
     handles = [
@@ -427,11 +440,12 @@ def figure3(root: Path, out_dir: Path) -> dict:
                              label="same-distribution band"))
     ax_c[1].legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.20),
                    ncol=2, fontsize=6, handlelength=1.5, columnspacing=1.4)
-    # Sits in the empty lower half of the MMD axes rather than above the title,
-    # so the reader meets the caveat while looking at the metric it applies to.
-    ax_c[1].text(0.5, 0.30, "at the upstream noise scale this metric\n"
-                            "saturates and is not shown",
-                 transform=ax_c[1].transAxes, fontsize=5.7, color=C["wrong"],
+    # The conditional-mean baseline has zero gene-gene covariance by
+    # construction, so this is the one metric it cannot win regardless of
+    # centering; last-observation wins by construction too, since it is real
+    # resampled cells. The caveat sits beside the panel it applies to.
+    ax_c[1].text(0.5, 0.92, "solid line: zero covariance by construction",
+                 transform=ax_c[1].transAxes, fontsize=5.5, color=C["neutral_dark"],
                  ha="center", va="center", linespacing=1.4)
     panel_label(ax_c[0], "c", x=-0.38, y=1.08)
 
@@ -453,11 +467,25 @@ def figure3(root: Path, out_dir: Path) -> dict:
         },
         "b_noise_scale": sc,
         "b_validation_selected_scales": seeds["summary"]["selected_scales"],
+        "c_metrics": [m[0] for m in metrics],
         "c_seed_summary": {k: v for k, v in S.items() if k != "selected_scales"},
         "c_baselines": base,
         "c_null_anchor": null_anchor,
+        "c_structure": {
+            "squidiff_values": frob_vals,
+            "conditional_mean": structure["conditional_mean"]["correlation_frobenius"],
+            "last_observation_d14": structure["last_observation_d14"]["correlation_frobenius"],
+            "rare_cluster_recall": {
+                "conditional_mean": structure["conditional_mean"]["rare_cluster_recall"],
+                "last_observation_d14": structure["last_observation_d14"]["rare_cluster_recall"],
+                "squidiff_seeds": [structure[f"squidiff_seed_{s}"]["rare_cluster_recall"]
+                                   for s in seed_order],
+            },
+        },
         "excluded": "MMD at scale 0.7 is saturated (0.638179 for all five seeds, equal to "
-                    "mean(k_xx)) and is deliberately not plotted",
+                    "mean(k_xx)) and is deliberately not plotted; MMD is demoted to a "
+                    "supplementary bandwidth-sensitivity check (Supplementary Table 4) "
+                    "because its Squidiff-vs-baseline ordering flips across the bandwidth grid",
     }
 
 
