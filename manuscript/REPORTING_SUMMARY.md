@@ -59,13 +59,13 @@ single-cell dataset (GSE190976) was generated and deposited by Li et al.
 
 ## 3. Data
 
-Confirm the data availability policy has been followed: **Partially — data
-deposit still pending.** Reused public data (GSE190976) is cited to its
-accession; newly generated derived data (splits, model checkpoints,
-generated populations, metrics, figure source data) are prepared for
-deposit but not yet uploaded to Zenodo as a separate record from the code
-archive above (DOI: **pending — must be minted before submission**), per
-the Data availability statement in `reusability_report.md`.
+Confirm the data availability policy has been followed: **Yes.** Reused
+public data (GSE190976) is cited to its accession; newly generated derived
+data (splits, model checkpoints, generated populations, metrics, figure
+source data) are deposited via Zenodo, DOI: 10.5281/zenodo.21510503
+(verified resolving — published record, CC BY 4.0), separate from the code
+archive above, per the Data availability statement in
+`reusability_report.md`.
 
 ## 4. Field-specific reporting
 
@@ -113,12 +113,12 @@ generated GSE190976.
 
 - Content is complete and internally consistent with `RESULTS.md` and
   `FIGURE_LEGENDS.md`. Author contributions (main text) are confirmed.
-- Two items must be resolved before this can be transcribed into NMI's
-  actual fillable Reporting Summary PDF: (1) the data Zenodo DOI (§3) is
-  not yet minted — the deposit has not been uploaded; (2) the code Zenodo
-  DOI (§2) is minted (10.5281/zenodo.21510468) but should be re-verified as
-  current against the GitHub repository before submission, since analysis
-  work continued after that deposit was published.
+- Both DOIs are now minted, verified resolving: data (§3)
+  10.5281/zenodo.21510503, code (§2) 10.5281/zenodo.21510468. One item
+  remains before submission: the code deposit was published 2026-07-23 and
+  analysis work continued after that — confirm a current snapshot has been
+  archived (cut a `v1.0.1` GitHub release if not; see `ZENODO_HOWTO.md`)
+  before treating this as final.
 - Confirm the funding-grant numbers are transcribed correctly into the
   submission system's own funder-lookup field (some systems require
   choosing a matched funder name from a dropdown rather than free text).

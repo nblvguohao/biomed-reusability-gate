@@ -2,21 +2,24 @@
 
 ## Status (2026-07-24, updated)
 
-**Everything that can be done locally is done. Two web/GUI steps are left for you.**
-
-- **Part 1 (code)**: `origin/feat/biomed-reusability-gate` is now fully
-  up to date — pushed all 14 pending commits (Phase 2 robustness, VO
-  structure replication, the correlation_frobenius_distance NaN fix, and
-  this DOI paperwork), so the branch matches HEAD exactly. **What's left is
-  entirely on GitHub's web UI**: draft and publish a `v1.0.1` release so
-  Zenodo archives a fresh snapshot. Walkthrough in Part 1 below (steps 4-7 —
-  1-3 are already done from when `v1.0.0` was cut). Once published, send me
-  the new version DOI and I'll swap it into the manuscript.
-- **Part 2 (data)**: the local package is rebuilt and complete — see
-  "What's staged, ready to upload" below. **What's left is entirely on
-  Zenodo's web UI**: open your existing draft deposit at
-  `zenodo.org/uploads/21510503`, upload the 14 files from `zenodo_upload/`,
-  fill in the metadata, and publish. Walkthrough in Part 2 below.
+- **Part 2 (data) is done.** Data DOI: `10.5281/zenodo.21510503`, verified
+  resolving — a published record titled "Squidiff CAR-NK reusability
+  report — model checkpoints, splits, and figure source data" (v1, CC BY
+  4.0). Filled into `reusability_report.md` (Data availability) and
+  `REPORTING_SUMMARY.md` §3. **Worth double-checking**: the verification
+  fetch surfaced only one author name — log in and confirm the full
+  7-author list is actually there, since Zenodo metadata can't be
+  silently corrected after publication (a fix needs a new version).
+- **Part 1 (code) is the one remaining item.** `origin/feat/biomed-
+  reusability-gate` is fully up to date (all 14 pending commits pushed —
+  Phase 2 robustness, VO structure replication, the
+  correlation_frobenius_distance NaN fix, and this DOI paperwork), but the
+  archived Zenodo snapshot (`10.5281/zenodo.21510468`, tagged `v1.0.0`,
+  2026-07-23) predates all of that. **What's left is entirely on GitHub's
+  web UI**: draft and publish a `v1.0.1` release so Zenodo archives a fresh
+  snapshot. Walkthrough in Part 1 below (steps 4-7 — 1-3 are already done
+  from when `v1.0.0` was cut). Once published, send me the new version DOI
+  and I'll swap it into the manuscript.
 
 ### What's staged, ready to upload (`zenodo_upload/`, 3.4 GB, 14 files + README)
 
@@ -100,9 +103,12 @@ version under the same concept DOI automatically.
 
 ---
 
-## Part 2 — Data DOI (direct upload)
+## Part 2 — Data DOI (direct upload) — DONE
 
-The files are staged at `zenodo_upload/` in the repository working tree —
+**Published**: `10.5281/zenodo.21510503`, verified resolving. Kept below
+for reference (e.g. if a future version needs the same steps).
+
+The files were staged at `zenodo_upload/` in the repository working tree —
 14 zip files + README.md, 3.4 GB total, listed in the table above (not
 committed to git; this directory is binary artefacts and belongs in
 Zenodo, not GitHub). Fourteen smaller archives upload far more reliably
@@ -111,14 +117,6 @@ through, you only redo that one. Note: each zip's internal paths start
 with `zenodo_package/` (e.g. unzipping `01_source_data.zip` yields
 `zenodo_package/01_source_data/gse190976_combined.h5ad`) — harmless, just
 expect that wrapper folder when you unzip locally to check a file.
-
-**You already have a draft deposit started**: `zenodo.org/uploads/21510503`.
-Open that directly (step 1 below is "resume the existing draft", not
-"create a new one") and pick up wherever you left off — if you already
-uploaded some files there under an earlier, incomplete version of this
-package, delete and re-upload them so the draft matches the table above
-exactly (a draft's files can be freely changed before you publish; only a
-published version is permanent).
 
 1. Go to **https://zenodo.org/uploads/21510503** (you must be logged in
    from Part 1 — same account).
@@ -162,27 +160,30 @@ published version is permanent).
 
 ---
 
-## Once the data DOI exists
+## Data DOI: done
 
-Send it and I will:
-- fill it into the `reusability_report.md` Data availability statement
-  (currently "DOI to be added before submission")
-- add it as a formal dataset citation in the reference list if you want it
-  citable from the main text, per the dataset-citation convention
-  (`[Creators] ([Year]) [Title]. Zenodo. [DOI]`)
-- cross-check the DOI page actually resolves, the same way the code DOI was
-  verified, before calling the manuscript submission-ready
+`10.5281/zenodo.21510503` is filled into the `reusability_report.md` Data
+availability statement and `REPORTING_SUMMARY.md` §3, and verified
+resolving. Not added as a formal numbered reference-list citation — the
+code DOI got the same treatment (inline URL in Code availability, no
+reference-list entry) for consistency; say the word if you'd rather it be
+a citable numbered reference instead.
+
+If a dataset-citation entry is wanted later, the convention is:
+`[Creators] ([Year]) [Title]. Zenodo. [DOI]`.
 
 ## Unresolved / to confirm
 
-- **Code snapshot currency**: confirm whether the published `v1.0.0` tag
-  predates the Phase 2 / VO-replication commits (see Status above); if so,
-  cut `v1.0.1` before submission so the archived code matches the paper.
+- **Code snapshot currency**: the published `v1.0.0` tag (2026-07-23)
+  predates the Phase 2 / VO-replication commits — confirmed, not just
+  suspected (all 14 commits are now on `origin`). Cut `v1.0.1` before
+  submission so the archived code matches the paper (Part 1 above).
 - Whether to merge `feat/biomed-reusability-gate` into `main` before tagging
-  a further release, or tag the feature branch directly. Either works
-  technically; merging first is the more conventional signal that this is
-  the reviewed state of the repository.
-- Exact author order and affiliation indices in the Zenodo metadata should
-  mirror whatever the manuscript ultimately uses — confirm before publishing
-  the data deposit, since author metadata cannot be silently corrected after
-  a version is minted (a correction requires a new version).
+  `v1.0.1`, or tag the feature branch directly. Either works technically;
+  merging first is the more conventional signal that this is the reviewed
+  state of the repository.
+- **Data deposit author list**: the verification fetch of
+  `10.5281/zenodo.21510503` surfaced only one author name where all seven
+  were intended — log in and confirm the full list actually made it into
+  the metadata (a correction after publication requires a new version, so
+  worth checking now rather than at submission).

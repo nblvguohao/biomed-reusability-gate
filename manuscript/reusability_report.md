@@ -113,7 +113,7 @@ The authors declare no competing interests.
 
 ## Data availability
 
-The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976, originally reported in ref. 5. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure will be available via Zenodo at a DOI to be added before submission (deposit in preparation, separate from the code archive below).
+The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976, originally reported in ref. 5. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure are available via Zenodo at https://doi.org/10.5281/zenodo.21510503 (CC BY 4.0).
 
 ## Code availability
 
