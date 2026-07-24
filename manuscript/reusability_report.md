@@ -113,11 +113,11 @@ The authors declare no competing interests.
 
 ## Data availability
 
-The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976, originally reported in ref. 5. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure are available via Zenodo at [DOI to be minted on acceptance].
+The single-cell data analysed in this study are publicly available from the Gene Expression Omnibus under accession GSE190976, originally reported in ref. 5. The released Squidiff checkpoint and training data verified here are available via figshare at https://doi.org/10.6084/m9.figshare.27948633 (CC BY 4.0). The processed AnnData object, the temporal split, the generated populations for every condition and seed, and the source data for every figure will be available via Zenodo at a DOI to be added before submission (deposit in preparation, separate from the code archive below).
 
 ## Code availability
 
-All scripts for data preparation, training, sampling, evaluation and figure generation are available via GitHub at https://github.com/nblvguohao/biomed-reusability-gate and archived via Zenodo at [DOI to be minted on acceptance]. The three compatibility patches against the pinned upstream commit are provided under `vendor/patches/squidiff/`, each with a regression test under `tests/regression/`. The original Squidiff source is available via GitHub at https://github.com/siyuh/Squidiff, pinned here at commit `abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8).
+All scripts for data preparation, training, sampling, evaluation and figure generation are available via GitHub at https://github.com/nblvguohao/biomed-reusability-gate and archived via Zenodo at https://doi.org/10.5281/zenodo.21510468. The three compatibility patches against the pinned upstream commit are provided under `vendor/patches/squidiff/`, each with a regression test under `tests/regression/`. The original Squidiff source is available via GitHub at https://github.com/siyuh/Squidiff, pinned here at commit `abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8).
 
 ---
 

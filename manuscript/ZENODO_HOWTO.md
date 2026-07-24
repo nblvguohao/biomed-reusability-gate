@@ -1,5 +1,26 @@
 # Getting the two Zenodo DOIs
 
+## Status (2026-07-24)
+
+- **Part 1 (code) is done.** Code DOI: `10.5281/zenodo.21510468`, verified
+  resolving — a published record titled "nblvguohao/biomed-reusability-gate:
+  v1.0.0 — Squidiff reusability report submission", tagged and published
+  2026-07-23. Filled into `reusability_report.md` (Code availability) and
+  `REPORTING_SUMMARY.md` §2.
+  **Open concern**: several commits landed after this deposit was
+  published — the Phase 2 statistical-robustness work (parallel bootstrap,
+  null anchors, MMD sensitivity, structure metrics) and the VO
+  structure-metric replication. If those postdate the `v1.0.0` tag, the
+  archived snapshot does not match what the manuscript now describes. Cut a
+  new release (`v1.0.1`) once the branch is finalized, so the code DOI's
+  concept record covers the current state — see "If you make further
+  commits..." below.
+- **Part 2 (data) is not started.** No `zenodo_upload/` deposit has been
+  published yet. This blocks the Data availability statement, which
+  currently reads "DOI to be added before submission" in
+  `reusability_report.md`.
+
+
 Two separate DOIs are needed, because code and data are different kinds of
 record and the manuscript cites them separately (see Data availability / Code
 availability in `reusability_report.md`):
@@ -128,25 +149,27 @@ a file.
 
 ---
 
-## After both DOIs exist
+## Once the data DOI exists
 
-Send me both DOIs (code and data) and I will:
-- replace the two `[DOI to be minted on acceptance]` placeholders in
-  `reusability_report.md` (Data availability / Code availability) with the
-  real, resolvable DOIs
-- add the data DOI as a formal dataset citation in the reference list if you
-  want it citable from the main text, per the dataset-citation convention
+Send it and I will:
+- fill it into the `reusability_report.md` Data availability statement
+  (currently "DOI to be added before submission")
+- add it as a formal dataset citation in the reference list if you want it
+  citable from the main text, per the dataset-citation convention
   (`[Creators] ([Year]) [Title]. Zenodo. [DOI]`)
-- cross-check that both DOI pages actually resolve before we call the
-  manuscript submission-ready
+- cross-check the DOI page actually resolves, the same way the code DOI was
+  verified, before calling the manuscript submission-ready
 
 ## Unresolved / to confirm
 
+- **Code snapshot currency**: confirm whether the published `v1.0.0` tag
+  predates the Phase 2 / VO-replication commits (see Status above); if so,
+  cut `v1.0.1` before submission so the archived code matches the paper.
 - Whether to merge `feat/biomed-reusability-gate` into `main` before tagging
-  the release, or tag the feature branch directly. Either works technically;
-  merging first is the more conventional signal that this is the reviewed
-  state of the repository.
+  a further release, or tag the feature branch directly. Either works
+  technically; merging first is the more conventional signal that this is
+  the reviewed state of the repository.
 - Exact author order and affiliation indices in the Zenodo metadata should
-  mirror whatever the manuscript ultimately uses — confirm before publishing,
-  since author metadata cannot be silently corrected after a version is
-  minted (a correction requires a new version).
+  mirror whatever the manuscript ultimately uses — confirm before publishing
+  the data deposit, since author metadata cannot be silently corrected after
+  a version is minted (a correction requires a new version).

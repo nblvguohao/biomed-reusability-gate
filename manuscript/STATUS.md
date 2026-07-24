@@ -34,8 +34,8 @@ Done and committed:
 - **Phase 1.3 Fig 3a**: main panel now uses the published-protocol A/B
   (376.8→561.7 vs 312.4→27.7, 11-fold); class-conditional probe demoted to
   labelled corroboration. Title/abstract re-centred; references completed
-  (11 refs, Crossref-verified); author contributions finalized
-  (**still needs each author's sign-off before submission**).
+  (11 refs, Crossref-verified); author contributions finalized and
+  **confirmed by all authors (2026-07-24)**.
 
 - **Phase 2 robustness** (`evaluation_robustness.py`, results in
   `artifacts/evaluation_robustness/robustness.json`): a deterministic
@@ -85,12 +85,34 @@ Done and committed:
   readings, new Supp. Note 11; Performance section, "same ordering" section,
   and Discussion boundaries updated.
 
-Remaining before submission: mint Zenodo DOI (code + artifacts); transcribe
-REPORTING_SUMMARY.md into the journal form; confirm author contributions
-with all authors; decide on and document contact with the original authors
-per NMI Reusability Report practice. Pre-existing failure retained:
-tests/regression GPU step (test_training_step_runs_on_gpu) fails identically
-on clean HEAD (numpy/torch drift in .venv310; out of revision scope).
+## 2026-07-24 submission-status update
+
+- **Code Zenodo DOI**: minted and verified resolving —
+  `10.5281/zenodo.21510468` (published record, "v1.0.0 — Squidiff
+  reusability report submission", 2026-07-23). Filled into
+  `reusability_report.md` and `REPORTING_SUMMARY.md`. **Open concern**: the
+  Phase 2 robustness work and the VO structure-metric replication (commits
+  `b685d67` onward) may postdate that tag — confirm and, if so, cut a new
+  release before submission so the archived snapshot matches the
+  manuscript (see `ZENODO_HOWTO.md`).
+- **Data Zenodo DOI**: not yet minted — the `zenodo_upload/` deposit has
+  not been uploaded. `reusability_report.md`'s Data availability statement
+  now reads "DOI to be added before submission" rather than a placeholder
+  bracket, pending that upload.
+- **Author contributions**: confirmed by all authors.
+- **Original-author contact**: decided — **not contacted**. If NMI's
+  editorial process expects notification of He et al., that should be
+  handled in the cover letter at submission, not in the manuscript body.
+- **Reporting Summary**: content complete (`REPORTING_SUMMARY.md`);
+  transcription into NMI's actual fillable PDF form is still a mechanical
+  step for whoever submits.
+
+Remaining before submission: upload the data deposit and mint its DOI;
+confirm the code deposit is current (see above); transcribe
+REPORTING_SUMMARY.md into the journal's actual form. Pre-existing failure
+retained: tests/regression GPU step (test_training_step_runs_on_gpu) fails
+identically on clean HEAD (numpy/torch drift in .venv310; out of revision
+scope).
 
 ## Retracted from the draft
 

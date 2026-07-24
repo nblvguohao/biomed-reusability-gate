@@ -50,15 +50,22 @@ single-cell dataset (GSE190976) was generated and deposited by Li et al.
   (`vendor/patches/squidiff/`, each with a regression test).
 - All custom analysis code is available at
   https://github.com/nblvguohao/biomed-reusability-gate (archived via
-  Zenodo, DOI: **[pending — see ZENODO_HOWTO.md]**).
+  Zenodo, DOI: 10.5281/zenodo.21510468). **Before submission, confirm this
+  archived snapshot is current** — it was published 2026-07-23 and several
+  commits (the Phase 2 statistical-robustness work and the VO structure-
+  metric replication) landed after that date; if the Zenodo deposit predates
+  them, cut a new version/release so the archived code matches what the
+  manuscript describes.
 
 ## 3. Data
 
-Confirm the data availability policy has been followed: **Yes.** Reused
-public data (GSE190976) is cited to its accession; newly generated
-derived data (splits, model checkpoints, generated populations, metrics,
-figure source data) are deposited via Zenodo (DOI: **[pending]**), per the
-Data availability statement in `reusability_report.md`.
+Confirm the data availability policy has been followed: **Partially — data
+deposit still pending.** Reused public data (GSE190976) is cited to its
+accession; newly generated derived data (splits, model checkpoints,
+generated populations, metrics, figure source data) are prepared for
+deposit but not yet uploaded to Zenodo as a separate record from the code
+archive above (DOI: **pending — must be minted before submission**), per
+the Data availability statement in `reusability_report.md`.
 
 ## 4. Field-specific reporting
 
@@ -104,11 +111,21 @@ generated GSE190976.
 
 ## Notes for the author team
 
-- This draft is complete and internally consistent with `RESULTS.md` and
-  `FIGURE_LEGENDS.md`. Nothing here should need author judgment except:
-  confirming the funding-grant numbers are transcribed correctly into the
-  submission system's own funder-lookup field (some systems require choosing
-  a matched funder name from a dropdown rather than free text).
+- Content is complete and internally consistent with `RESULTS.md` and
+  `FIGURE_LEGENDS.md`. Author contributions (main text) are confirmed.
+- Two items must be resolved before this can be transcribed into NMI's
+  actual fillable Reporting Summary PDF: (1) the data Zenodo DOI (§3) is
+  not yet minted — the deposit has not been uploaded; (2) the code Zenodo
+  DOI (§2) is minted (10.5281/zenodo.21510468) but should be re-verified as
+  current against the GitHub repository before submission, since analysis
+  work continued after that deposit was published.
+- Confirm the funding-grant numbers are transcribed correctly into the
+  submission system's own funder-lookup field (some systems require
+  choosing a matched funder name from a dropdown rather than free text).
 - If NMI's specific Reporting Summary version differs in section wording
   from the general Nature Portfolio template used here, map the answers
   across by content, not by section number.
+- The original authors (He et al.) have not been contacted about this
+  reusability report. If NMI's editorial process expects notification or a
+  right-of-reply window, address that in the cover letter, not in this
+  form.
