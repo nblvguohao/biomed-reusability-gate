@@ -179,6 +179,32 @@ Read-out:
   upstream repository reports no quantitative metric that would have surfaced
   this — not as "Squidiff fails to transfer to new data".
 
+## Positive control, structure metrics
+
+`positive_control_structure.py`, same task/checkpoint/data as above.
+Source: `artifacts/positive_control/structure_metrics.json`. Only scale 0.03
+decoded (0.7 already fails on every marginal metric there). Two of 596
+released genes are exactly zero across the whole day-1 population; both
+structure metrics exclude genes with zero variance in the real comparison
+population (fixed a real NaN bug in `correlation_frobenius_distance` that
+this run surfaced — see commit `57d5806`; CAR-NK's HVG genes are unaffected).
+
+| condition | correlation Frobenius | rare-cluster recall |
+|---|---|---|
+| Squidiff, scale 0.03 (3 seeds) | 52.36 (51.4–53.8) | 1.000 |
+| conditional-mean, pooled | 95.01 | 1.000 |
+| last-observation, day-0 resample | 98.68 | 0.568 |
+| oracle Gaussian (day-1 marginals) | 95.02 | 0.630 |
+
+Sharper than CAR-NK: here Squidiff beats **every** baseline on **both**
+structure metrics, including last-observation and the oracle. Read: VO's
+last-observation baseline (day-0, a single homogeneous population) is a
+much weaker stand-in for day-1's three more heterogeneous cell types than
+CAR-NK's last-observation (D14, one step before the held-out D21/D28) is
+for the CAR-NK held-out set — consistent with its low rare-cluster recall
+here (0.568) despite being real cells. The marginal-vs-structure split is
+therefore not a CAR-NK peculiarity.
+
 ## Uncertainty beyond training seed, MMD sensitivity, structure metrics
 
 `evaluation_robustness.py`, on the same split as the performance table above.

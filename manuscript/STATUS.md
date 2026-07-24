@@ -72,6 +72,18 @@ Done and committed:
     field would naturally report and wins the one property those metrics
     cannot see. Performance section, Discussion, Outlook, abstract, and Fig.
     3 legend all rewritten to carry this two-sided result; Supp. Note 10.
+- **Structure metrics replicated on VO** (`positive_control_structure.py`,
+  `artifacts/positive_control/structure_metrics.json`): repeats the
+  structure-metric check on the authors' own released setting. Sharper than
+  CAR-NK — Squidiff beats *every* baseline there, including last-observation
+  and an oracle Gaussian fit on the target population, on both structure
+  metrics. Surfaced and fixed a real bug along the way:
+  `correlation_frobenius_distance` returned NaN when a gene is exactly
+  constant in the real population (2 of 596 released VO genes are; CAR-NK's
+  HVG-selected genes have none, so the already-published CAR-NK numbers are
+  unaffected — checked directly, not assumed). Supp. Note 8 extended to four
+  readings, new Supp. Note 11; Performance section, "same ordering" section,
+  and Discussion boundaries updated.
 
 Remaining before submission: mint Zenodo DOI (code + artifacts); transcribe
 REPORTING_SUMMARY.md into the journal form; confirm author contributions

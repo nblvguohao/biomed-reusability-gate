@@ -269,7 +269,7 @@ spread 1.36, injected noise norm at the released default scale 0.7 is 5.42 —
 | Last-observation, day-0 resample | real day-0 cells resampled | 47.58 | 0.378 | 0.281 |
 | Oracle Gaussian | per-gene mean/variance on day-1 cells (not usable for prediction) | 0.45 | 0.003 | 1.000 |
 
-Three readings. (i) The released default scale destroys the prediction on
+Four readings. (i) The released default scale destroys the prediction on
 the authors' own data too — Barrier 3 is not specific to our CAR-NK encoder.
 (ii) Even at a repaired scale, Squidiff trails a per-gene Gaussian fit on
 the same pooled training data (7.24 vs 1.51) whose mean sits midway between
@@ -280,9 +280,10 @@ well. The CAR-NK ordering therefore reflects what these distributional
 metrics reward (marginal moments), not a CAR-NK-specific or low-drift
 artefact; and because the upstream reproducibility material reports no
 quantitative metric (Supplementary Note 4), nothing upstream could have
-surfaced it. This control was run only on the marginal metrics (energy
-distance, MMD, per-gene mean correlation); the structure metrics of
-Supplementary Note 10 were not repeated on VO.
+surfaced it. (iv) The structure-metric replication (Supplementary Note 11)
+shows the same marginal-vs-structure split holds here too, and more
+sharply: on VO, Squidiff beats every baseline on structure, not only the
+diagonal-covariance one.
 
 ---
 
@@ -395,3 +396,46 @@ three of five seeds. The reading in the main text: Squidiff loses the
 metrics the field would naturally report against a moment-matched sampler,
 and wins the one property that sampler cannot have by construction, against
 the baseline that actually shares its generative task.
+
+---
+
+## Supplementary Note 11 | Structure metrics replicated on the authors' own released setting
+
+Source: `artifacts/positive_control/structure_metrics.json`,
+`positive_control_structure.py`. Same task, checkpoint and data as
+Supplementary Note 8 (released VO checkpoint, 6,838 cells, 596 genes,
+predicting day-1 from day-0); only the repaired noise scale (0.03, 3
+sampling seeds) is decoded here, since the released default already fails
+on every marginal metric on this data (Note 8) and its structure score
+would not change the reading. Two of the 596 released genes are exactly
+zero across the entire day-1 population; both structure metrics exclude
+genes with zero variance in the real population being scored against,
+since Pearson correlation is undefined for a constant variable (fixed in
+`correlation_frobenius_distance` after this run first surfaced it as NaN;
+the already-published CAR-NK numbers were checked and are unaffected,
+since their 500 HVG-selected genes contain none).
+
+| Condition | Correlation Frobenius distance | Rare-cluster mass recall |
+|---|---|---|
+| Squidiff, scale 0.03 (3 seeds) | 52.36 (51.4–53.8) | 1.000 |
+| Conditional-mean, pooled | 95.01 | 1.000 |
+| Last-observation, day-0 resample | 98.68 | 0.568 |
+| Oracle Gaussian (day-1 marginals) | 95.02 | 0.630 |
+
+Unlike CAR-NK, where Squidiff beat the diagonal-covariance baseline but
+still trailed the real-cell last-observation baseline on correlation
+distance, on VO Squidiff beats **every** baseline on **both** structure
+metrics, including last-observation and the oracle. The likely reason is
+structural, not a discrepancy between the two controls: CAR-NK's
+last-observation baseline is real day-14 cells, one step before the D21/D28
+cells being scored, from the same tissue and a temporally adjacent state,
+so it carries real structure that is still largely relevant. VO's
+last-observation baseline is real day-0 cells — a single, more homogeneous
+population — being scored against day-1, which the released data documents
+as three more heterogeneous cell types; day-0 cells resampled do not carry
+day-1's structure, which is consistent with their weak rare-cluster recall
+here (0.568) despite being real cells. Squidiff's structure recovery on VO
+is therefore not an artefact of one control being biologically easier than
+the other — CAR-NK and VO differ in how informative their respective
+"replay the last state" baseline is, not in whether Squidiff's structure
+result replicates.
