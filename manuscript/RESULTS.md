@@ -88,8 +88,12 @@ Validation-selected scale, one value chosen per seed on a training-only task:
 | last-observation baseline (D14 resample) | 0.72 | 0.0108 | +0.9760 |
 | last-observation variant (pooled-mean point mass) | 19.10 | 0.1145 | +0.9378 |
 
-Worse than the conditional-mean baseline on all three metrics in all five seeds.
-The third metric is invariant to affine rescaling, so this is not an output-scale
+Worse than the conditional-mean baseline on these two marginal/distance metrics
+in all five seeds. MMD's ordering is not stable across bandwidth (see below) and
+is not used as a headline metric; on the structure metrics added later
+(correlation Frobenius distance, rare-cluster recall — see "Uncertainty beyond
+training seed" section below), Squidiff *beats* conditional_mean in all five
+seeds. Per-gene mean correlation is invariant to affine rescaling, so that gap is not an output-scale
 artefact.
 
 ## Baseline provenance and the energy-distance decomposition
@@ -174,6 +178,59 @@ Read-out:
   evaluation regime — distributional metrics reward marginal moments, and the
   upstream repository reports no quantitative metric that would have surfaced
   this — not as "Squidiff fails to transfer to new data".
+
+## Uncertainty beyond training seed, MMD sensitivity, structure metrics
+
+`evaluation_robustness.py`, on the same split as the performance table above.
+Source: `artifacts/evaluation_robustness/robustness.json`.
+
+**Null anchor** (metric between random halves of the held-out population, 50
+splits): energy distance 0.0266 mean / 0.0509 q95; MMD (RBF, training
+bandwidth) 0.00035 mean / 0.00090 q95; per-gene mean correlation 0.9995 mean /
+0.9989 q05. Every reported energy distance below (0.72–1244) is far above this
+floor.
+
+**Bootstrap 95% CIs for energy distance** (200 resamples; cell-level and
+sample-level, the latter resampling whole held-out biological samples):
+
+| | estimate | cell-level CI | sample-level CI |
+|---|---|---|---|
+| conditional_mean | 4.26 | [4.18, 4.38] | [3.93, 5.72] |
+| last_observation (D14 resample) | 0.72 | [0.67, 0.80] | [0.71, 3.65] |
+| Squidiff seed 13 | 28.72 | [26.78, 30.85] | [25.90, 32.32] |
+| Squidiff seed 37 | 29.26 | [27.19, 31.37] | [26.30, 33.34] |
+| Squidiff seed 73 | 24.90 | [23.04, 26.93] | [22.44, 28.30] |
+| Squidiff seed 101 | 28.99 | [27.04, 30.94] | [25.88, 32.80] |
+| Squidiff seed 137 | 27.28 | [25.47, 29.34] | [24.65, 31.52] |
+
+No Squidiff seed's sample-level CI overlaps either baseline's.
+Leave-one-sample-out preserves the ordering in all 25 folds. Baseline
+dispersion across 10 resampling draws: conditional_mean 4.263 ± 0.009,
+last_observation 0.776 ± 0.042 — an order of magnitude below Squidiff's
+24.9–29.3 training-seed spread.
+
+**MMD bandwidth grid** (bandwidth × {0.25, 0.5, 1, 2, 4}): Squidiff beats
+conditional_mean at 0.25× (0.082–0.087 vs 0.1103) and 0.5× (0.127–0.141 vs
+0.1712); conditional_mean wins at 1×, 2×, 4×. Ordering flips across the grid
+→ MMD demoted to a supplementary sensitivity table, not a headline metric.
+
+**Structure metrics** (gene–gene correlation Frobenius distance, lower
+better; rare-cluster mass recall, higher better):
+
+| | correlation Frobenius | rare-cluster recall |
+|---|---|---|
+| conditional_mean | 266.17 | 0.34 |
+| last_observation (D14 resample) | 79.09 | 1.00 |
+| Squidiff (5 seeds) | 126.8–145.4 (mean 137.9 ± 8.4) | 0.93–1.00 (mean 0.97) |
+
+Squidiff beats conditional_mean on both structure metrics in all 5 seeds
+(wins the metric a diagonal-covariance sampler cannot capture by
+construction) but trails last_observation, which trivially carries real
+correlation structure. **This is the headline nuance**: Squidiff loses the
+marginal/distance metrics the field typically reports and wins the one
+metric a moment-matched Gaussian baseline cannot win — against the baseline
+that shares its generative task. Performance section and Discussion rewritten
+accordingly.
 
 ## Also found
 

@@ -280,4 +280,118 @@ well. The CAR-NK ordering therefore reflects what these distributional
 metrics reward (marginal moments), not a CAR-NK-specific or low-drift
 artefact; and because the upstream reproducibility material reports no
 quantitative metric (Supplementary Note 4), nothing upstream could have
-surfaced it.
+surfaced it. This control was run only on the marginal metrics (energy
+distance, MMD, per-gene mean correlation); the structure metrics of
+Supplementary Note 10 were not repeated on VO.
+
+---
+
+## Supplementary Note 9 | Uncertainty beyond training seed
+
+Source: `artifacts/evaluation_robustness/robustness.json`,
+`evaluation_robustness.py` (git commit `10e6d8435cdf`), on the same
+CAR-NK split as the main performance result (test population 4,668 cells,
+5 samples). Every population — the two baselines and each of the five
+independently trained Squidiff seeds at its validation-selected noise
+scale — is scored on the same held-out data by the same energy-distance
+function; only the resampling procedure varies row to row.
+
+**Same-distribution null band** (50 splits of the held-out population into
+random halves, scored against each other): energy distance mean 0.0266
+(95th percentile 0.0509); MMD (RBF, training bandwidth) mean 0.00035 (95th
+percentile 0.00090); per-gene mean correlation mean 0.9995 (5th percentile
+0.9989). Every reported energy distance in the main comparison (0.72 to
+1244) is one to five orders of magnitude above this floor.
+
+**Bootstrap 95% intervals for energy distance**, cell-level (200 resamples
+of individual cells) and sample-level (200 resamples of whole held-out
+biological samples, the more conservative unit):
+
+| Population | Estimate | Cell-level 95% CI | Sample-level 95% CI |
+|---|---|---|---|
+| Conditional-mean | 4.26 | [4.18, 4.38] | [3.93, 5.72] |
+| Last-observation (D14 resample) | 0.72 | [0.67, 0.80] | [0.71, 3.65] |
+| Squidiff, seed 13 | 28.72 | [26.78, 30.85] | [25.90, 32.32] |
+| Squidiff, seed 37 | 29.26 | [27.19, 31.37] | [26.30, 33.34] |
+| Squidiff, seed 73 | 24.90 | [23.04, 26.93] | [22.44, 28.30] |
+| Squidiff, seed 101 | 28.99 | [27.04, 30.94] | [25.88, 32.80] |
+| Squidiff, seed 137 | 27.28 | [25.47, 29.34] | [24.65, 31.52] |
+
+No Squidiff seed's sample-level interval overlaps the conditional-mean
+baseline's (nearest approach: seed 73's lower bound of 22.44 against the
+baseline's upper bound of 5.72); the same holds against last-observation.
+
+**Leave-one-held-out-sample-out**: recomputing energy distance with each of
+the five D21/D28 samples excluded in turn preserves the three-way ordering
+(conditional-mean 4.10–4.57; last-observation 0.73–1.35; every Squidiff
+seed 23.08–29.93) in all 25 (5 samples × 5 seeds) folds.
+
+**Baseline dispersion** (10 independent resampling draws at fixed data,
+varying only the resampling seed, not the training seed): conditional-mean
+4.263 ± 0.009; last-observation 0.776 ± 0.042. Both an order of magnitude
+below the 24.9–29.3 spread across Squidiff's five *training* seeds, so
+neither baseline's score is a lucky single draw.
+
+---
+
+## Supplementary Table 4 | MMD bandwidth-sensitivity grid
+
+Source: `artifacts/evaluation_robustness/robustness.json`. Grid is the
+training-data median-heuristic bandwidth (35.39) scaled by {0.25, 0.5, 1,
+2, 4}; MMD (RBF) computed at each point for the two baselines and each
+Squidiff seed's regenerated validation-selected population.
+
+| Bandwidth | Conditional-mean | Last-observation | Squidiff (5 seeds, range) |
+|---|---|---|---|
+| 8.85 (0.25×) | 0.1103 | 0.0092 | 0.082–0.087 |
+| 17.70 (0.5×) | 0.1712 | 0.0170 | 0.127–0.141 |
+| 35.39 (1×, training) | 0.0577 | 0.0108 | 0.152–0.172 |
+| 70.79 (2×) | 0.0120 | 0.0035 | 0.144–0.164 |
+| 141.58 (4×) | 0.0027 | 0.0009 | 0.076–0.091 |
+
+At 0.25× and 0.5× bandwidth, every Squidiff seed scores *below* (better
+than) the conditional-mean baseline; at the training bandwidth and above,
+every seed scores above (worse than) it. The ordering is not a monotonic
+function of bandwidth and is not stable across this one-decade grid, so
+MMD is not used to support a performance claim in either direction in the
+main text (it is retained in Supplementary Table 3 as a descriptive value
+at the one bandwidth fixed on training data).
+
+---
+
+## Supplementary Note 10 | Structure metrics: gene–gene correlation and rare-cluster recall
+
+Source: `artifacts/evaluation_robustness/robustness.json`. Neither energy
+distance nor per-gene mean correlation can penalize a sampler for missing
+gene–gene covariance; these two metrics can. Gene–gene correlation
+Frobenius distance is the Frobenius norm between the generated and
+held-out populations' own gene-by-gene Pearson correlation matrices (lower
+is better). Rare-cluster mass recall fits k-means (8 clusters) on the
+held-out population, marks clusters holding under 10% of held-out cells as
+rare, and reports the fraction of rare-cluster mass whose nearest centroid
+receives at least one generated cell (higher is better; 1.0 is perfect).
+
+| Population | Correlation Frobenius distance | Rare-cluster mass recall |
+|---|---|---|
+| Conditional-mean | 266.17 | 0.34 |
+| Last-observation (D14 resample) | 79.09 | 1.00 |
+| Squidiff, seed 13 | 145.44 | 1.00 |
+| Squidiff, seed 37 | 141.28 | 1.00 |
+| Squidiff, seed 73 | 131.16 | 0.93 |
+| Squidiff, seed 101 | 126.80 | 1.00 |
+| Squidiff, seed 137 | 144.83 | 0.93 |
+| Squidiff, mean ± s.d. | 137.90 ± 8.44 | 0.97 ± 0.04 |
+
+The conditional-mean baseline has zero off-diagonal correlation by
+construction, and scores worst on both structure metrics despite winning
+on energy distance and per-gene mean correlation. Squidiff beats it on
+correlation-matrix distance in all five seeds (137.9 vs 266.2, a wider
+relative margin than the energy-distance loss) and on rare-cluster recall
+in all five seeds (0.93–1.00 vs 0.34). Last-observation still wins on
+correlation-matrix distance — unsurprisingly, since it is real held-out-
+window-adjacent cells and so carries genuine correlation structure by
+construction, not by having learned it — and matches Squidiff on recall in
+three of five seeds. The reading in the main text: Squidiff loses the
+metrics the field would naturally report against a moment-matched sampler,
+and wins the one property that sampler cannot have by construction, against
+the baseline that actually shares its generative task.

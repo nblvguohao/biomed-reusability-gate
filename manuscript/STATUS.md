@@ -37,16 +37,40 @@ Done and committed:
   (11 refs, Crossref-verified); author contributions finalized
   (**still needs each author's sign-off before submission**).
 
-In flight: Phase 2 robustness (null anchors, bootstrap CIs, LOSO, MMD
-bandwidth grid, structure metrics) — `evaluation_robustness.py`.
+- **Phase 2 robustness** (`evaluation_robustness.py`, results in
+  `artifacts/evaluation_robustness/robustness.json`): a deterministic
+  parallel bootstrap driver (each (population × mode) task re-seeds its own
+  `RandomState`, so distributing across an 8-core spawn Pool changes only
+  wall-clock, ~4.8h → ~40min, never the numbers; unit-tested for bit-identity
+  against the sequential loop) computed:
+  - **Null anchors**: same-distribution reference band (random halves of
+    held-out population) — ED 0.027 (q95 0.051), far below every reported
+    gap. Drawn as a shaded band on Fig. 3c; RESULTS.md, Supp. Note 9.
+  - **Uncertainty beyond training seed**: sample-level bootstrap CIs (no
+    overlap between any Squidiff seed and either baseline), leave-one-
+    sample-out (ordering holds in all 25 folds), baseline resampling
+    dispersion (an order of magnitude below the seed-to-seed spread).
+    Supp. Note 9.
+  - **MMD bandwidth sensitivity**: ordering flips at 0.25×/0.5× bandwidth
+    (Squidiff wins) versus 1×/2×/4× (baseline wins) — MMD demoted from
+    headline metric to Supp. Table 4 sensitivity check; Fig. 3c middle panel
+    swapped from MMD to the structure metric below.
+  - **Structure metrics** (gene–gene correlation Frobenius distance,
+    rare-cluster mass recall — the properties a diagonal-covariance sampler
+    cannot win by construction): Squidiff beats conditional-mean on both, in
+    every seed, but trails last-observation (which trivially inherits real
+    correlation structure). **This is the real headline nuance the TDD
+    flagged as possible**: Squidiff loses the marginal/distance metrics the
+    field would naturally report and wins the one property those metrics
+    cannot see. Performance section, Discussion, Outlook, abstract, and Fig.
+    3 legend all rewritten to carry this two-sided result; Supp. Note 10.
 
-Remaining before submission: integrate Phase 2 numbers into text/figures;
-mint Zenodo DOI (code + artifacts); transcribe REPORTING_SUMMARY.md into the
-journal form; confirm author contributions with all authors; decide on and
-document contact with the original authors per NMI Reusability Report
-practice. Pre-existing failure retained: tests/regression GPU step
-(test_training_step_runs_on_gpu) fails identically on clean HEAD
-(numpy/torch drift in .venv310; out of revision scope).
+Remaining before submission: mint Zenodo DOI (code + artifacts); transcribe
+REPORTING_SUMMARY.md into the journal form; confirm author contributions
+with all authors; decide on and document contact with the original authors
+per NMI Reusability Report practice. Pre-existing failure retained:
+tests/regression GPU step (test_training_step_runs_on_gpu) fails identically
+on clean HEAD (numpy/torch drift in .venv310; out of revision scope).
 
 ## Retracted from the draft
 
