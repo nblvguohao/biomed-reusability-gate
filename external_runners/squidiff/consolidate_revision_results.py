@@ -68,6 +68,40 @@ def _apply_posthoc(cutoff: dict[str, Any], posthoc: dict[str, Any]) -> None:
     cutoff["posthoc_evaluation"] = posthoc
 
 
+def _merge_primary(
+    seed_study: dict[str, Any],
+    robustness: dict[str, Any],
+    baseline_posthoc: dict[str, Any],
+    model_posthoc: dict[str, Any],
+) -> dict[str, Any]:
+    baselines = {
+        entry["seed"]: entry.get("baselines", {})
+        for entry in baseline_posthoc["per_seed"]
+    }
+    per_seed = model_posthoc["per_seed"]
+    for entry in per_seed:
+        if entry["seed"] not in baselines:
+            raise ValueError(f"missing primary baselines for seed {entry['seed']}")
+        entry["baselines"] = baselines[entry["seed"]]
+    return {
+        "cutoff": "primary_d21_d28",
+        "train_times": [0, 7, 14],
+        "test_times": [21, 28],
+        "primary_test_times": [21, 28],
+        "expected_seeds": model_posthoc["expected_seeds"],
+        "completed_seeds": model_posthoc["completed_seeds"],
+        "complete": model_posthoc["complete"],
+        "per_seed": per_seed,
+        "same_distribution_reference": baseline_posthoc[
+            "same_distribution_reference"
+        ],
+        "posthoc_evaluation": baseline_posthoc,
+        "posthoc_model_evaluation": model_posthoc,
+        "legacy_seed_study": seed_study,
+        "robustness": robustness,
+    }
+
+
 def consolidate(
     root: Path,
     output_path: Path | None = None,
@@ -79,6 +113,10 @@ def consolidate(
     late_path = root / "artifacts/cutoff_studies/late_d28/cutoff_summary.json"
     primary_posthoc_path = (
         root / "artifacts/cutoff_studies/primary_d21_d28/posthoc_evaluation.json"
+    )
+    primary_model_posthoc_path = (
+        root
+        / "artifacts/cutoff_studies/primary_d21_d28/posthoc_model_evaluation.json"
     )
     early_posthoc_path = root / "artifacts/cutoff_studies/early_d14/posthoc_evaluation.json"
     late_posthoc_path = root / "artifacts/cutoff_studies/late_d28/posthoc_evaluation.json"
@@ -98,6 +136,7 @@ def consolidate(
     early = _completed_cutoff(early_path)
     late = _completed_cutoff(late_path)
     primary_posthoc = _completed_posthoc(primary_posthoc_path)
+    primary_model_posthoc = _completed_posthoc(primary_model_posthoc_path)
     early_posthoc = _completed_posthoc(early_posthoc_path)
     late_posthoc = _completed_posthoc(late_posthoc_path)
     _apply_posthoc(early, early_posthoc)
@@ -111,21 +150,12 @@ def consolidate(
         "schema_version": "1.0",
         "purpose": "single source of truth for the NMI revision",
         "cutoffs": {
-            "primary_d21_d28": {
-                "cutoff": "primary_d21_d28",
-                "train_times": [0, 7, 14],
-                "test_times": [21, 28],
-                "primary_test_times": [21, 28],
-                "seeds": primary.get("seeds", []),
-                "per_seed": primary.get("per_seed", []),
-                "summary": primary.get("summary", {}),
-                "baselines": primary.get("baselines", {}),
-                "robustness": robustness,
-                "same_distribution_reference": primary_posthoc[
-                    "same_distribution_reference"
-                ],
-                "posthoc_evaluation": primary_posthoc,
-            },
+            "primary_d21_d28": _merge_primary(
+                primary,
+                robustness,
+                primary_posthoc,
+                primary_model_posthoc,
+            ),
             "early_d14": early,
             "late_d28": late,
         },
@@ -166,6 +196,7 @@ def consolidate(
                     early_path,
                     late_path,
                     primary_posthoc_path,
+                    primary_model_posthoc_path,
                     early_posthoc_path,
                     late_posthoc_path,
                     vo_distribution_path,

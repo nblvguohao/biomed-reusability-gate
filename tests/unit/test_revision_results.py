@@ -69,6 +69,24 @@ def _synthetic_root(tmp_path: Path) -> Path:
             },
         )
     _write(
+        root
+        / "artifacts/cutoff_studies/primary_d21_d28/posthoc_model_evaluation.json",
+        {
+            "cutoff": "primary_d21_d28",
+            "expected_seeds": [13, 37, 73, 101, 137],
+            "completed_seeds": [13, 37, 73, 101, 137],
+            "complete": True,
+            "per_seed": [
+                {
+                    "seed": seed,
+                    "selected_or_fixed_scales": [0.03],
+                    "squidiff": {"scale_0.03": {"primary": {"metric": seed}}},
+                }
+                for seed in (13, 37, 73, 101, 137)
+            ],
+        },
+    )
+    _write(
         root / "artifacts/positive_control/positive_control_metrics.json",
         {"task": "day-1 from day-0", "results": {}},
     )
@@ -87,10 +105,8 @@ def test_revision_manifest_contains_all_cutoffs(tmp_path):
         "early_d14",
         "late_d28",
     }
-    assert all(
-        len(result["cutoffs"][name]["per_seed"]) == 5
-        for name in ("early_d14", "late_d28")
-    )
+    assert all(len(result["cutoffs"][name]["per_seed"]) == 5 for name in result["cutoffs"])
+    assert "squidiff" in result["cutoffs"]["primary_d21_d28"]["per_seed"][0]
 
 
 def test_vo_is_explicitly_target_informed(tmp_path):
