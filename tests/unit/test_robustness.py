@@ -19,6 +19,7 @@ from evaluation_robustness import (  # noqa: E402
     bootstrap_metric_ci,
     cluster_mass_recall,
     correlation_frobenius_distance,
+    evaluate_structure_metrics,
     null_energy_distance,
     parallel_bootstrap,
 )
@@ -141,3 +142,23 @@ def test_cluster_mass_recall_perfect_for_identical_population():
     gen_missing = common[rng.choice(450, 500, replace=True)]
     recall_missing = cluster_mass_recall(real, gen_missing, n_clusters=2, rare_below=0.2, rng=np.random.RandomState(1))
     assert recall_missing == 0.0
+
+
+def test_evaluate_structure_metrics_reports_reference_and_mass_sensitivity():
+    rng = np.random.RandomState(13)
+    common = rng.randn(360, 6)
+    rare = rng.randn(40, 6) + 5.0
+    real = np.vstack([common, rare])
+    generated = common[rng.choice(common.shape[0], real.shape[0], replace=True)]
+
+    result = evaluate_structure_metrics(
+        real,
+        generated,
+        cluster_counts=(2, 3),
+        rare_thresholds=(0.15, 0.20),
+        random_state=7,
+    )
+
+    assert set(result["correlation_frobenius"]) == {"raw", "normalized"}
+    assert result["cluster_mass"]["rare_mass_recall"] < 1.0
+    assert len(result["cluster_mass_sensitivity"]) == 4

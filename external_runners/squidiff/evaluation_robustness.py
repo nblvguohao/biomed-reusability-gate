@@ -94,15 +94,9 @@ def correlation_frobenius_distance(real: np.ndarray, gen: np.ndarray) -> float:
     VO data has two such genes (exactly zero across the entire held-out
     population) out of 596; CAR-NK's HVG-selected genes have none.
     """
-    real = np.asarray(real, dtype=np.float64)
-    gen = np.asarray(gen, dtype=np.float64)
-    keep = real.std(axis=0) > 0
-    if keep.sum() < 2:
-        raise ValueError("fewer than 2 genes with nonzero variance in `real`")
-    real, gen = real[:, keep], gen[:, keep]
-    cr = np.corrcoef(real, rowvar=False)
-    cg = np.corrcoef(gen, rowvar=False)
-    return float(np.linalg.norm(cr - cg, ord="fro"))
+    from reuse_gate.metrics.structure import correlation_frobenius
+
+    return correlation_frobenius(real, gen, normalized=False)
 
 
 def cluster_mass_recall(real, gen, n_clusters: int, rare_below: float, rng) -> float:
@@ -127,6 +121,45 @@ def cluster_mass_recall(real, gen, n_clusters: int, rare_below: float, rng) -> f
     hits = sum(mass[c] for c in rare if c in covered)
     total = float(mass[rare].sum())
     return float(hits / total) if total > 0 else 1.0
+
+
+def evaluate_structure_metrics(
+    real: np.ndarray,
+    generated: np.ndarray,
+    *,
+    cluster_counts: tuple[int, ...] = (6, 8, 10, 12),
+    rare_thresholds: tuple[float, ...] = (0.05, 0.10, 0.15),
+    random_state: int = 13,
+) -> dict:
+    """Return pre-specified correlation and cluster-mass structure metrics."""
+    from reuse_gate.metrics.structure import (
+        cluster_mass_metrics,
+        correlation_frobenius,
+        structure_sensitivity_grid,
+    )
+
+    primary_cluster_count = 8 if 8 in cluster_counts else cluster_counts[0]
+    primary_rare_threshold = 0.10 if 0.10 in rare_thresholds else rare_thresholds[0]
+    return {
+        "correlation_frobenius": {
+            "raw": correlation_frobenius(real, generated, normalized=False),
+            "normalized": correlation_frobenius(real, generated, normalized=True),
+        },
+        "cluster_mass": cluster_mass_metrics(
+            real,
+            generated,
+            n_clusters=primary_cluster_count,
+            rare_below=primary_rare_threshold,
+            random_state=random_state,
+        ),
+        "cluster_mass_sensitivity": structure_sensitivity_grid(
+            real,
+            generated,
+            cluster_counts=cluster_counts,
+            rare_thresholds=rare_thresholds,
+            random_state=random_state,
+        ),
+    }
 
 
 def _bootstrap_one(task: tuple) -> tuple:
@@ -270,6 +303,7 @@ def run(sweep_dir: Path, seed_study_dir: Path, output_dir: Path) -> dict:
         mean_expression_correlation,
         mmd_rbf,
     )
+    from reuse_gate.metrics.structure import same_distribution_structure_reference
     from reuse_gate.models.temporal_baselines import conditional_mean_sampler
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -326,6 +360,11 @@ def run(sweep_dir: Path, seed_study_dir: Path, output_dir: Path) -> dict:
                     "q95": float(np.quantile(null_mmd, 0.95))},
         "mean_expression_correlation": {"mean": float(np.mean(null_corr)),
                                         "q05": float(np.quantile(null_corr, 0.05))},
+        "correlation_structure": same_distribution_structure_reference(
+            test_mat,
+            n_splits=50,
+            rng=np.random.RandomState(7),
+        ),
         "note": "metric between random halves of the held-out population; "
                 "the same-distribution reference band",
     }
@@ -369,12 +408,7 @@ def run(sweep_dir: Path, seed_study_dir: Path, output_dir: Path) -> dict:
     print("2.4 structure metrics ...")
     structure = {}
     for name, gen in populations.items():
-        structure[name] = {
-            "correlation_frobenius": correlation_frobenius_distance(test_mat, gen),
-            "rare_cluster_recall": cluster_mass_recall(
-                test_mat, gen, n_clusters=8, rare_below=0.10, rng=np.random.RandomState(1)
-            ),
-        }
+        structure[name] = evaluate_structure_metrics(test_mat, gen)
     result["structure"] = structure
 
     out = output_dir / "robustness.json"
