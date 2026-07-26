@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import sys
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "external_runners" / "squidiff"))
 
+import make_revision_figures  # noqa: E402
 from make_revision_figures import figure3_source_rows, make_all_figures  # noqa: E402
 
 
@@ -156,3 +158,17 @@ def test_final_figure_bundle_uses_current_claim_language(tmp_path):
         assert stale not in text
     payload = json.loads((tmp_path / "figure_source_data.json").read_text())
     assert payload["vo_interpretation"] == "target-informed"
+    assert set(payload["figure1_cutoffs"]) == {
+        "primary_d21_d28",
+        "early_d14",
+        "late_d28",
+    }
+    assert len(payload["figure2"]["preprocessing_rows"]) == 6
+    assert len(payload["figure2"]["latent_noise_rows"]) == 3
+    assert payload["figure2"]["released_checkpoint"]["energy_distance"] == 2.10
+    svg_text = "\n".join(
+        (tmp_path / f"Figure_{index}.svg").read_text(encoding="utf-8") for index in (1, 2, 3)
+    )
+    assert "鈥" not in svg_text
+    assert "\ufffd" not in svg_text
+    assert "鈥" not in inspect.getsource(make_revision_figures)

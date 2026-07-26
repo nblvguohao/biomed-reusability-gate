@@ -1,441 +1,285 @@
 # Supplementary Information
 
-Supplementary material to *Reusability report: Squidiff reproduces as
-released but is silently undermined by a code–documentation gap and an
-unexposed sampling default*. Every number below names the script and
-artefact file that produced it, per the same convention as
-`manuscript/RESULTS.md`.
+## A leakage-safe reusability audit of Squidiff for single-cell temporal prediction
 
----
+Guohao Lv, Yingchun Xia, Huichao Liu, Xiaolei Zhu, Shuai Yang, Ailian Zhou and Lichuan Gu
 
-## Supplementary Note 1 | Environment and software versions
+## Supplementary Note 1 | Audit scope and evidence levels
 
-| Component | Version |
+The audit distinguishes three evidence levels. Functional verification asks
+whether released files load strictly, build the documented architecture and
+produce finite samples. Interface verification exercises public execution
+paths with minimal synthetic or released inputs. Predictive assessment requires
+a target population that remains outside model fitting, feature selection,
+validation and baseline fitting. Evidence at one level is not promoted to the
+next without the corresponding information-boundary checks.
+
+The upstream revision is commit
+`abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8). The released VO
+checkpoint contains 62 tensors and 54,565,522 parameters. It loads with zero
+missing and zero unexpected state-dictionary keys. Sampling 512 cells produces
+finite values and energy distance 2.098 to the sampled released reference
+population. The associated matrix contains 6,838 cells and 596 genes (mean
+1.781, maximum 14.468), consistent with log-normalized expression.
+
+## Supplementary Note 2 | Label-conditional interface corrections
+
+The label-conditional interface was tested with both encoder and class
+conditioning enabled. Three independent incompatibilities appear in a fixed
+sequence on an accelerator:
+
+1. labels arrive at the linear embedding as integer tensors;
+2. labels remain on the host while model parameters are on the accelerator;
+3. labels have shape `(batch,)` while `Linear(1, hidden)` expects
+   `(batch, 1)`.
+
+The corrections cast labels to floating point, move them to the model device
+and reshape them to one column. Each change is covered by a regression test
+that exercises the affected code path. The diffusion objective, schedule,
+architecture width and sampling procedure are unchanged. The released
+development configuration sets class conditioning to false; the finding
+therefore applies to reuse of the public label-conditional interface and is not
+attributed to the encoder-development workflow.
+
+## Supplementary Note 3 | Expression scale is part of the model specification
+
+Raw CAR-NK counts and the released training data occupy different numerical
+ranges. In the controlled A/B comparison, the same split, seed, architecture,
+training budgets and latent-noise scale were used, and only preprocessing
+changed.
+
+| Training steps | Raw-count energy distance | Normalized + log1p energy distance |
+|---:|---:|---:|
+| 5,000 | 376.755 | 312.449 |
+| 20,000 | 514.824 | 69.632 |
+| 50,000 | 561.719 | 27.679 |
+
+The transformation was per-cell library-size normalization to 10,000 followed
+by `log1p`. Loss decreased in both conditions. Thus an optimization trace alone
+cannot identify an incompatible expression scale, and the transformation must
+be recorded with the checkpoint or validated at the data boundary.
+
+## Supplementary Note 4 | Accessible Gaussian simulation
+
+The accessible upstream Gaussian simulation contains 3,000 cells, 100 genes
+and three classes. Before normalization, class means are 5.001, 7.999 and
+9.996, and the silhouette coefficient is 0.472. After library-size
+normalization, every class has mean 50.0. After `log1p`, class means are 3.911,
+3.924 and 3.927 and the silhouette coefficient is −0.064. The simulation
+continues to execute but no longer provides a discriminative class target. The
+separate Splatter input referenced through an institution-specific location
+was unavailable and is outside the audit.
+
+## Supplementary Note 5 | Temporal-cutoff manifests
+
+| Cutoff | Training timepoints | Direction | Validation policy | Test timepoints | Biological test samples |
+|---|---|---|---|---|---:|
+| Early | D0, D7 | D0→D7 | Fixed scales 0 and 0.03 | D14 primary; D21/D28 exploratory | 4 at D14; 5 later |
+| Primary | D0, D7, D14 | D7→D14 | D0→D7 scored at D14 | D21, D28 | 5 |
+| Late | D0, D7, D14, D21 | D14→D21 | D7→D14 scored at D21 | D28 | 1 |
+
+Train and test sample identifiers are disjoint in every manifest. Early
+training contains 7,378 cells from 9 samples; primary training contains 11,588
+cells from 13 samples; late training contains 15,746 cells from 17 samples.
+Feature selection ranks genes by training-set variance and retains 500 genes.
+Normalization is applied per cell and does not estimate a population parameter
+from the test set. The late cutoff is descriptive because its test population
+contains one biological sample.
+
+## Supplementary Note 6 | Baseline definitions
+
+All baselines are refitted for every cutoff and seed and receive only the
+corresponding training population.
+
+| Baseline | Training information used | Generated target |
+|---|---|---|
+| Last observation | Cells at the latest observed time | Resampling with replacement |
+| Pooled diagonal Gaussian | Per-gene mean and variance from the full training window | Independent per-gene Gaussian samples |
+| Temporal diagonal Gaussian | Mean change between direction times and latest residual variance | Extrapolated per-gene mean with diagonal noise |
+| Temporal factor Gaussian | Training-fitted factor space, factor-mean change and residual variance | Extrapolated low-rank factors plus residual noise |
+
+The factor component count is selected from 5, 10, 20 and 50 using
+training-window reconstruction criteria. Output population size is set to the
+number of real target cells only after fitting. Random resampling is repeated
+with the same seed schedule used for the model comparison.
+
+## Supplementary Note 7 | Metric definitions
+
+Energy distance compares multivariate populations using Euclidean distances.
+Mean-expression correlation is Pearson correlation between vectors of
+per-gene population means. It is invariant to a shared positive affine
+transformation but not to gene-specific affine transformations.
+
+For dependence, genes with zero variance in the real population are removed
+because their Pearson correlations are undefined. The Frobenius norm between
+real and generated gene-correlation matrices is reported both raw and divided
+by the retained gene count.
+
+For population composition, k-means is fitted to the real target population
+and generated cells are assigned to their nearest target centroids. Let `p`
+and `q` be the real and generated cluster-mass vectors. Cluster-mass error is
+the mean of `|p − q|`; Jensen–Shannon divergence is calculated with natural
+logarithms. Clusters with real mass below the specified threshold are rare.
+Rare-mass recall is the recovered fraction of real rare mass. Rare-mass
+precision is the fraction of generated mass assigned to real rare clusters
+that corresponds to recovered real rare mass. Sensitivity crosses 6, 8, 10 and
+12 clusters with thresholds 0.05, 0.10 and 0.15.
+
+Repeated same-distribution references use disjoint random subsets of the real
+target population. They quantify finite-sample metric variation and do not
+enter model or hyperparameter selection.
+
+## Supplementary Note 8 | Three-cutoff results
+
+Values below are arithmetic mean ± sample standard deviation across the five
+predeclared computational seeds. For the early cutoff, the two fixed Squidiff
+scales are separate estimands. Primary and late Squidiff rows combine the
+per-seed scales selected using only their training-window validation
+transitions. Population-composition values use the nominal setting of eight
+target-fitted clusters and a rare-mass threshold of 0.10.
+
+### Supplementary Table 1 | Marginal and dependence metrics at the primary endpoints
+
+| Cutoff | Method | Energy distance | Mean-expression r | Normalized correlation distance |
+|---|---|---:|---:|---:|
+| Early D14 | Squidiff, scale 0 | 20.995 ± 6.403 | 0.831 ± 0.043 | 0.296 ± 0.045 |
+| Early D14 | Squidiff, scale 0.03 | 22.014 ± 6.291 | 0.827 ± 0.042 | 0.289 ± 0.043 |
+| Early D14 | Last observation | 0.089 ± 0.009 | 0.998 ± 0.000 | 0.044 ± 0.004 |
+| Early D14 | Pooled diagonal Gaussian | 2.736 ± 0.005 | 0.969 ± 0.000 | 0.445 ± 0.000 |
+| Early D14 | Temporal diagonal Gaussian | 5.974 ± 0.009 | 0.904 ± 0.000 | 0.445 ± 0.000 |
+| Early D14 | Temporal factor Gaussian | 4.696 ± 0.062 | 0.906 ± 0.001 | 0.104 ± 0.003 |
+| Primary D21/D28 | Squidiff, training-selected scale | 27.830 ± 1.805 | 0.830 ± 0.013 | 0.276 ± 0.017 |
+| Primary D21/D28 | Last observation | 0.768 ± 0.037 | 0.974 ± 0.001 | 0.159 ± 0.002 |
+| Primary D21/D28 | Pooled diagonal Gaussian | 4.265 ± 0.010 | 0.938 ± 0.001 | 0.532 ± 0.000 |
+| Primary D21/D28 | Temporal diagonal Gaussian | 3.482 ± 0.008 | 0.970 ± 0.000 | 0.532 ± 0.000 |
+| Primary D21/D28 | Temporal factor Gaussian | 1.953 ± 0.024 | 0.970 ± 0.001 | 0.151 ± 0.002 |
+| Late D28 | Squidiff, training-selected scale | 29.967 ± 2.301 | 0.814 ± 0.007 | 0.470 ± 0.018 |
+| Late D28 | Last observation | 5.119 ± 0.319 | 0.811 ± 0.013 | 0.236 ± 0.016 |
+| Late D28 | Pooled diagonal Gaussian | 6.049 ± 0.036 | 0.800 ± 0.002 | 0.427 ± 0.000 |
+| Late D28 | Temporal diagonal Gaussian | 7.293 ± 0.045 | 0.783 ± 0.001 | 0.427 ± 0.000 |
+| Late D28 | Temporal factor Gaussian | 6.194 ± 0.253 | 0.786 ± 0.007 | 0.213 ± 0.011 |
+
+### Supplementary Table 2 | Population-composition metrics at the primary endpoints
+
+| Cutoff | Method | Cluster-mass MAE | Rare-mass recall | Rare-mass precision |
+|---|---|---:|---:|---:|
+| Early D14 | Squidiff, scale 0 | 0.094 ± 0.003 | 0.692 ± 0.104 | 0.633 ± 0.052 |
+| Early D14 | Squidiff, scale 0.03 | 0.095 ± 0.002 | 0.700 ± 0.093 | 0.647 ± 0.043 |
+| Early D14 | Last observation | 0.013 ± 0.002 | 0.937 ± 0.014 | 0.884 ± 0.010 |
+| Early D14 | Pooled diagonal Gaussian | 0.210 ± 0.001 | 0.409 ± 0.003 | 0.124 ± 0.001 |
+| Early D14 | Temporal diagonal Gaussian | 0.234 ± 0.000 | 0.219 ± 0.000 | 0.063 ± 0.000 |
+| Early D14 | Temporal factor Gaussian | 0.092 ± 0.001 | 0.760 ± 0.012 | 0.391 ± 0.008 |
+| Primary D21/D28 | Squidiff, training-selected scale | 0.097 ± 0.002 | 0.679 ± 0.013 | 0.490 ± 0.015 |
+| Primary D21/D28 | Last observation | 0.058 ± 0.001 | 0.910 ± 0.022 | 0.474 ± 0.003 |
+| Primary D21/D28 | Pooled diagonal Gaussian | 0.230 ± 0.000 | 0.342 ± 0.000 | 0.079 ± 0.000 |
+| Primary D21/D28 | Temporal diagonal Gaussian | 0.238 ± 0.000 | 0.215 ± 0.002 | 0.050 ± 0.000 |
+| Primary D21/D28 | Temporal factor Gaussian | 0.123 ± 0.001 | 0.939 ± 0.001 | 0.305 ± 0.002 |
+| Late D28 | Squidiff, training-selected scale | 0.126 ± 0.003 | 0.433 ± 0.078 | 0.564 ± 0.099 |
+| Late D28 | Last observation | 0.105 ± 0.004 | 0.557 ± 0.076 | 0.938 ± 0.029 |
+| Late D28 | Pooled diagonal Gaussian | 0.220 ± 0.000 | 0.738 ± 0.000 | 0.122 ± 0.000 |
+| Late D28 | Temporal diagonal Gaussian | 0.237 ± 0.000 | 0.321 ± 0.000 | 0.053 ± 0.000 |
+| Late D28 | Temporal factor Gaussian | 0.111 ± 0.003 | 0.729 ± 0.062 | 0.312 ± 0.011 |
+
+### Supplementary Table 3 | Same-distribution references
+
+Each reference reports the mean and the 5th–95th percentile interval from 50
+random disjoint splits of the real primary target population.
+
+| Cutoff | Energy distance | Mean-expression r | Normalized correlation distance |
+|---|---:|---:|---:|
+| Early D14 | 0.0311 (0.0200–0.0635) | 0.9995 (0.9989–0.9997) | 0.0278 (0.0254–0.0308) |
+| Primary D21/D28 | 0.0314 (0.0150–0.0701) | 0.9995 (0.9989–0.9998) | 0.0263 (0.0234–0.0298) |
+| Late D28 | 0.2795 (0.1621–0.4720) | 0.9951 (0.9895–0.9976) | 0.0846 (0.0749–0.1022) |
+
+### Supplementary Table 4 | Exploratory extensions of the early model
+
+These rows extend models trained only on D0 and D7 beyond the primary D14
+endpoint. They are exploratory and do not enter scale selection.
+
+| Method | Endpoint | Energy distance | Mean-expression r | Normalized correlation distance |
+|---|---|---:|---:|---:|
+| Squidiff, scale 0 | D21 | 27.907 ± 9.398 | 0.826 ± 0.047 | 0.172 ± 0.030 |
+| Squidiff, scale 0 | D28 | 35.448 ± 14.665 | 0.806 ± 0.013 | 0.313 ± 0.045 |
+| Squidiff, scale 0.03 | D21 | 28.101 ± 9.307 | 0.825 ± 0.047 | 0.169 ± 0.027 |
+| Squidiff, scale 0.03 | D28 | 38.658 ± 16.936 | 0.804 ± 0.016 | 0.304 ± 0.042 |
+| Last observation | D21 | 0.737 ± 0.035 | 0.976 ± 0.002 | 0.149 ± 0.002 |
+| Last observation | D28 | 5.222 ± 0.146 | 0.805 ± 0.009 | 0.224 ± 0.005 |
+| Pooled diagonal Gaussian | D21 | 5.374 ± 0.019 | 0.908 ± 0.001 | 0.541 ± 0.000 |
+| Pooled diagonal Gaussian | D28 | 6.641 ± 0.030 | 0.781 ± 0.002 | 0.409 ± 0.000 |
+| Temporal diagonal Gaussian | D21 | 14.590 ± 0.038 | 0.857 ± 0.001 | 0.541 ± 0.000 |
+| Temporal diagonal Gaussian | D28 | 37.079 ± 0.101 | 0.534 ± 0.002 | 0.409 ± 0.000 |
+| Temporal factor Gaussian | D21 | 13.392 ± 0.090 | 0.857 ± 0.001 | 0.178 ± 0.003 |
+| Temporal factor Gaussian | D28 | 37.525 ± 0.572 | 0.532 ± 0.007 | 0.229 ± 0.003 |
+
+## Supplementary Note 9 | Primary-cutoff robustness checks
+
+The earlier primary analysis included sample-level uncertainty checks in
+addition to the unified metric pass. A same-distribution energy-distance
+reference over 50 splits had mean 0.0266 and 95th percentile 0.0509. The
+conditional Gaussian estimate was 4.262 with a sample-level percentile
+bootstrap interval 3.932–5.722. Individual Squidiff estimates ranged from
+24.903 to 29.259, with the narrowest sample-level interval 22.441–28.297.
+Leaving out each of the five test samples preserved the ordering between these
+conditions. These intervals describe the finite set of deposited samples; they
+do not turn model seeds or cells into biological replicates.
+
+Kernel maximum mean discrepancy was retained only as a sensitivity analysis
+because its ordering changed with the bandwidth. At the training-fitted
+bandwidth 35.394, Squidiff values were higher than the pooled diagonal
+Gaussian, but at smaller bandwidths the ordering changed for some seeds. It is
+therefore not used for a headline conclusion.
+
+## Supplementary Note 10 | Released VO mechanism check
+
+The released VO checkpoint was trained on all 6,838 cells from D0 and D1, and
+the latent direction uses both days. At latent scale 0.03, mean energy distance
+across three sampling seeds was 7.241 and mean-expression correlation was
+0.975. The pooled diagonal Gaussian had energy distance 1.505 and correlation
+0.974; resampling D0 had energy distance 47.579 and correlation 0.281. At scale
+0.7, Squidiff energy distance was 626.551 and correlation 0.451.
+
+Dependence gave a different ordering. Squidiff correlation-matrix Frobenius
+distance was 52.360, compared with 95.013 for the pooled diagonal Gaussian and
+98.681 for D0 resampling. This result supports operation of the released
+latent mechanism and illustrates the distinction between marginal and
+dependence metrics. It is target-informed and does not support out-of-sample
+generalization.
+
+## Supplementary Note 11 | Statistical and computational interpretation
+
+Each displayed model mean and standard deviation uses five independently
+initialized computational runs. These seeds quantify training and sampling
+variability. Biological sample identifiers are the observational units for
+statements about the dataset. No null-hypothesis test is performed across
+seeds, and no cell-level P value is reported.
+
+Cutoff training used Python 3.10.20, PyTorch 2.4.1.post300 with CUDA 12.0 and
+two NVIDIA A100-SXM4-80GB GPUs. NumPy 1.26.4, SciPy 1.15.3, scikit-learn 1.7.2,
+pandas 2.3.3, anndata 0.11.4 and scanpy 1.11.5 were recorded. Source archives,
+input matrices and retrieved archives are SHA-256 checked. Consolidation
+requires every expected seed and overlays correction-safe post-hoc baseline
+metrics without altering cached model populations.
+
+## Supplementary Table 5 | Fixed training configuration
+
+| Parameter | Value |
 |---|---|
-| OS | Windows 11 Pro, build 10.0.26200 |
-| Python | 3.10.11 (GPU/production environment, `--system-site-packages` venv), 3.11 (lint/type-check parity environment) |
-| PyTorch | 2.11.0+cu128 |
-| CUDA (via PyTorch) | 12.8 |
-| GPU | NVIDIA GeForce RTX 5070 Ti, 17.1 GB VRAM |
-| scanpy | 1.11.5 |
-| anndata | 0.11.4 |
-| numpy | 2.2.6 |
-| scipy | 1.15.3 |
-| scikit-learn | 1.7.2 |
-| pandas | 2.3.3 |
-| Squidiff (upstream) | commit `abdfc27d84947dcccd745d1067c0840a41d32eb8` (v1.0.8) |
-| Container/environment strategy | Docker unavailable on the evaluation machine; a pinned venv was used instead (see Discussion, Boundaries) |
+| Seeds | 13, 37, 73, 101, 137 |
+| Training steps | 50,000 |
+| Batch size | 64 |
+| Encoder | Enabled |
+| Class conditioning | Disabled |
+| Model layers | 3 |
+| Diffusion steps | 1,000 |
+| Retained genes | 500, selected on training cells |
+| Early latent scales | 0 and 0.03 |
+| Primary/late candidate scales | 0, 0.03, 0.1, 0.3 and 0.7 |
 
-Full dependency lockfiles are in the code repository (`pyproject.toml`,
-`uv.lock`) and archived at the code DOI.
+## Supplementary Table 6 | Data and code records
 
----
-
-## Supplementary Note 2 | The three conditional-branch defects (Barrier 2), in detail
-
-Summarized in the main text; full technical detail, exact patch diffs, and
-the regression-test strategy for each are in `vendor/patches/squidiff/README.md`
-in the code repository, reproduced in structure here:
-
-| Defect | File patched | Symptom | Root cause |
-|---|---|---|---|
-| i. Label dtype | `Squidiff/scrna_datasets.py` | `RuntimeError: mat1 and mat2 must have the same dtype, but got Long and Float` | `AnnDataDataset.__init__` assigns the raw `int64` NumPy array of group labels directly to the encoded-label tensor; the correct `dtype=torch.float32` cast is present in the upstream source but commented out on the line immediately above, in an unrelated conditional branch. |
-| ii. Label device placement | `Squidiff/train_util.py` | `RuntimeError: Expected all tensors to be on the same device, but got mat1 is on cpu, different from other tensors on cuda:0` | `TrainLoop.forward_backward` moves every other batch tensor to the compute device except `batch['group']`. Invisible on a CPU-only run, because host and compute device then coincide — reachable only when training actually runs on a GPU. |
-| iii. Label embedding rank | `Squidiff/MLPModel.py` | `RuntimeError: mat1 and mat2 shapes cannot be multiplied (1x64 and 1x2048)` | `label_embed` is `nn.Linear(1, hidden)`, requiring rank-2 input `(batch, 1)`; the DataLoader yields rank-1 labels `(batch,)`. |
-
-All three are dtype/device/rank defects only; none touches the diffusion
-process, the loss, the sampler, or any hyperparameter. They surface in the
-fixed order i → ii → iii: correcting one exposes the next on the following
-optimizer step, which is why they are recorded as three separate patches
-rather than one. The released configuration sets `class_cond=False`,
-consistent with this path never having been exercised end-to-end upstream.
-
-Regression tests: `tests/regression/test_squidiff_patches.py`. The dtype and
-rank patches are verified functionally on CPU; the device patch is guarded by
-a source-level assertion plus a `@pytest.mark.gpu` end-to-end training step
-that reproduces the original failure when the patch is reverted. All three
-were confirmed to turn red on a throwaway tree copy with the corresponding
-patch reverted.
-
----
-
-## Supplementary Table 1 | Barrier 3 noise-scale sweep, full values
-
-One trained model (published protocol, 50,000 steps, seed 13), latent
-dimension 60, direction norm (D7→D14) 0.0808, within-D14 spread norm 0.808.
-Source: `artifacts/squidiff_latent_extrap/latent_noise_scale_sweep.json`.
-
-| Scale | Injected noise norm | Pooled energy distance | Generated mean / s.d. |
-|---|---|---|---|
-| 0.7 (upstream default) | 5.422 | 1302.39 | 42.63 / 56.69 |
-| 0.3 | 2.324 | 153.23 | 7.32 / 7.12 |
-| 0.107 (= 1× latent s.d.) | 0.830 | 35.29 | 3.63 / 4.16 |
-| 0.054 | 0.415 | 29.86 | 3.37 / 3.89 |
-| 0.0 | 0.0 | 27.56 | 3.29 / 3.88 |
-
-Baselines on this split: conditional-mean 4.26, last-observation (D14
-resample) 0.72. A zero-variance point-mass variant of last-observation
-(pooled training mean tiled to each cell) scores 19.10; see Supplementary
-Note 7 for the decomposition that explains the difference.
-
----
-
-## Supplementary Table 2 | Validation-based scale selection, all five seeds
-
-Validation task: direction estimated pre-infusion→D7 (training data only),
-extrapolated one step, scored against real D14 (also training data — D14
-labels are never used to fit the direction). Selected scale = argmin energy
-distance over candidates {0.7, 0.3, 0.1, 0.03, 0.0}. Source:
-`artifacts/squidiff_seed_study/seed_study_metrics.json`.
-
-| Seed | ED @ 0.7 | ED @ 0.3 | ED @ 0.1 | ED @ 0.03 | ED @ 0.0 | Selected |
-|---|---|---|---|---|---|---|
-| 13 | 1169.41 | 129.88 | 32.06 | **26.22** | 26.55 | 0.03 |
-| 37 | 1202.80 | 141.27 | 33.60 | 28.94 | **27.29** | 0.0 |
-| 73 | 1256.17 | 139.10 | 30.41 | **23.90** | 23.96 | 0.03 |
-| 101 | 1216.08 | 130.15 | 33.32 | **27.30** | 28.37 | 0.03 |
-| 137 | 1290.41 | 134.57 | 32.27 | 28.51 | **28.40** | 0.0 |
-
-Selected scales: 0.03, 0.0, 0.03, 0.03, 0.0 — none near the upstream default
-of 0.7, and the two candidates nearest zero are essentially tied for every
-seed, meaning the noise term contributes negligibly once past the
-order-of-magnitude correction.
-
----
-
-## Supplementary Table 3 | Performance under the published protocol, per-timepoint breakdown
-
-Test task: direction D7→D14 (training data), extrapolated to D21 (1 step)
-and D28 (2 steps), scored against the corresponding held-out cells.
-Validation-selected scale per seed as in Table 2. Source: same metrics file
-as Table 2.
-
-| Seed | Timepoint | n | Energy distance | MMD (RBF) | Mean expr. correlation |
-|---|---|---|---|---|---|
-| 13 | D21 | 4,158 | 28.04 | 0.1584 | 0.8025 |
-| 13 | D28 | 510 | 26.41 | 0.1954 | 0.8374 |
-| 37 | D21 | 4,158 | 29.48 | 0.1667 | 0.8123 |
-| 37 | D28 | 510 | 27.66 | 0.1888 | 0.8325 |
-| 73 | D21 | 4,158 | 24.75 | 0.1494 | 0.8388 |
-| 73 | D28 | 510 | 24.26 | 0.1837 | 0.8412 |
-| 101 | D21 | 4,158 | 28.57 | 0.1701 | 0.8087 |
-| 101 | D28 | 510 | 30.21 | 0.2050 | 0.8336 |
-| 137 | D21 | 4,158 | 27.99 | 0.1644 | 0.8130 |
-| 137 | D28 | 510 | 25.54 | 0.1957 | 0.8345 |
-
-Pooled (both timepoints combined) values per seed and the cross-seed
-mean ± s.d. are reported in the main text (Fig. 3c) and
-`manuscript/RESULTS.md`.
-
----
-
-## Supplementary Note 3 | Barrier 1 confirmed under the published protocol, full values
-
-The main text (Barrier 1) reports this confirmation in one sentence; full
-per-budget values follow. Protocol: latent extrapolation, released
-architecture (`class_cond=False`, `use_encoder=True`, `num_layers=3`,
-`diffusion_steps=1000`), noise scale fixed at 0.03 for both preprocessing
-conditions and all three budgets (chosen from Table 2 rather than re-tuned,
-to keep this a single-variable comparison), seed 13. Source:
-`artifacts/squidiff_latent_extrap_ab/preprocessing_ab_metrics.json`.
-
-| Training steps | Raw counts, pooled ED | Log-normalized, pooled ED |
-|---|---|---|
-| 5,000 | 376.76 | 312.45 |
-| 20,000 | 514.82 | 69.63 |
-| 50,000 | 561.72 | 27.68 |
-
-Baselines on the raw-count split: conditional-mean 129.30, last-observation
-(point-mass variant) 687.72. Baselines on the log-normalized split:
-conditional-mean 4.26, last-observation (point-mass variant) 19.10; the
-D14-resample last-observation scores 0.72 on the log-normalized split
-(Supplementary Note 7). (Baselines differ between the two rows because
-energy distance is scale-sensitive and the two splits are on different
-scales by construction — this is the same reason the main comparison uses a
-scale-invariant third metric.)
-
----
-
-## Supplementary Note 4 | Upstream simulated benchmark, full degeneracy detail
-
-Source: `artifacts/squidiff_reproduction/reproduction_metrics.json` and
-`reproduce_upstream_simulated.py`, reproducing `prep_simu_data.ipynb`
-(upstream reproducibility repository), 3,000 simulated cells, 1,000 per
-type, `np.random.seed(42)`.
-
-| Stage | Type A mean | Type B mean | Type C mean | Silhouette (3 types) |
-|---|---|---|---|---|
-| Before preprocessing | 5.001 | 7.999 | 9.996 | 0.4723 |
-| After `normalize_total` (prescribed) | 50.000 | 50.000 | 50.000 | −0.0625 |
-
-The three simulated types differ only by a global expression-level offset by
-construction; library-size normalization is defined to remove exactly that
-signal, so this is an internal inconsistency in the benchmark's own design
-rather than an implementation bug. Scope: the Gaussian simulation only; the
-splatter-simulated dataset in the same notebook sits behind an
-institution-internal HPC path and was not accessible for reproduction.
-
-No quantitative metric of any kind (accuracy, distance, correlation, or
-otherwise) appears in the 83 code cells across the two upstream
-reproducibility notebooks we audited (`prep_simu_data.ipynb`,
-`fig4_VO_reproducibility.ipynb`) — visual inspection of plots is the only
-form of validation those notebooks provide. Scope: the reproducibility
-repository contains further notebooks (drug, gene-perturbation, sci-Plex and
-GBM workflows) that we did not audit; this statement covers the two
-notebooks that document the released checkpoint and the simulated benchmark
-assessed in this report.
-
----
-
-## Supplementary Note 5 | Rare-state recall under the class-conditional probe
-
-Reported for completeness alongside the Barrier 1 probe (main text Fig. 3a);
-not a claim about the published latent-extrapolation protocol, which does
-not target specific rare subpopulations by construction. Using k-means
-clusters fitted on held-out cells and counting any cluster below 10%
-prevalence as rare: raw counts recover 0.0 rare-cluster mass at every
-training budget tested; log-normalized data recover 0.0 at 5,000 steps,
-rising to 1.0 by 50,000 steps under the class-conditional probe used for
-Barrier 1. This tracks the same preprocessing effect as the energy-distance
-result above and should be read as a demonstration of the same barrier, not
-as an independent performance claim about rare-state discovery under the
-published protocol.
-
----
-
-## Supplementary Note 6 | Positive-control checkpoint, full verification detail
-
-Source: `artifacts/released_checkpoint/released_checkpoint_check.json`,
-`load_released_checkpoint.py`, figshare 10.6084/m9.figshare.27948633
-(CC BY 4.0).
-
-| Check | Result |
+| Resource | Persistent identifier |
 |---|---|
-| Tensors in state dict | 62 |
-| Total parameters | 54,565,522 |
-| `load_state_dict(strict=True)` | 0 missing keys, 0 unexpected keys |
-| Sampled population | 512 cells, all finite |
-| Energy distance to reference population | 2.098 |
-| Released training data scale | mean 1.78, max 14.47 (confirms log-normalization independently of our own preprocessing sweep) |
-| Released training configuration | `class_cond=False`, `use_encoder=True`, `num_layers=3`, `gene_size=596`, 2,400 steps, batch size 16 |
-
----
-
-## Supplementary Note 7 | Baseline fit sets and the energy-distance decomposition
-
-Source: `artifacts/baseline_provenance/baseline_provenance.json`,
-`baseline_provenance.py`. Stated because the headline comparison depends on
-it: **both baselines are fit only on the pooled training window**
-(pre-infusion + D7 + D14, 11,588 cells); held-out cells are never touched.
-
-| Baseline | Fit set | cross | within_real | within_generated | ED | MMD | mean corr |
-|---|---|---|---|---|---|---|---|
-| Conditional-mean sampler | per-gene mean/variance, pooled training window | 36.53 | 32.69 | 36.11 | 4.26 | 0.0577 | 0.9375 |
-| Last-observation, as first implemented | pooled training mean tiled to every cell (constant, zero variance) | 25.90 | 32.69 | **0.0** | 19.10 | 0.1145 | 0.9378 |
-| Last-observation, D14 resample (used in the main text) | real D14 training cells resampled with replacement | 33.85 | 32.69 | 34.29 | **0.72** | 0.0108 | 0.9760 |
-
-Two points follow. First, the early "last-observation" implementation and
-its name disagreed: it was a zero-variance point mass, and with
-ED = 2·cross − within_real − within_generated it forfeited the entire
-within-generated term (0.0 vs 32.69 for the real population). Its cross term
-is actually the best of the three (25.90 — the pooled training mean sits
-centrally), so the 4.26-vs-19.10 ordering reflects the metric's treatment of
-a zero-variance prediction, not centering. Second, the D14-resample
-last-observation is the strongest baseline of all (ED 0.72), consistent with
-the low-drift task structure discussed in the main text — the CAR-NK
-population moves little between the training and held-out windows, so a
-method that simply replays the last observed population is hard to beat on
-distributional metrics. Squidiff (validation-selected ED 27.15 ± 1.78)
-trails both baselines on every metric.
-
----
-
-## Supplementary Note 8 | Positive control on the authors' own released setting
-
-Source: `artifacts/positive_control/positive_control_metrics.json`,
-`positive_control.py`. Task: predict the day-1 VO population from the day-0
-anchor through the published latent-extrapolation mechanism, using the
-released VO checkpoint and its released training data (6,838 cells, 596
-genes, days {0, 1}; figshare 10.6084/m9.figshare.27948633, CC BY 4.0).
-Latent geometry on the released encoder: direction norm 0.84, within-day-1
-spread 1.36, injected noise norm at the released default scale 0.7 is 5.42 —
-6.5× the direction being extrapolated.
-
-| Condition | Fit set | ED | MMD (RBF) | Mean corr |
-|---|---|---|---|---|
-| Squidiff, released default 0.7 | released checkpoint; direction E\[z_day1\]−E\[z_day0\] | 626.55 | saturated (0.638) | 0.451 |
-| Squidiff, scale 0.03 | as above; 3 sampling seeds | 7.24 ± 0.07 | 0.031 | 0.975 |
-| Conditional-mean, pooled | per-gene mean/variance on all 6,838 training cells (days 0+1) | **1.51** | 0.012 | 0.974 |
-| Last-observation, day-0 resample | real day-0 cells resampled | 47.58 | 0.378 | 0.281 |
-| Oracle Gaussian | per-gene mean/variance on day-1 cells (not usable for prediction) | 0.45 | 0.003 | 1.000 |
-
-Four readings. (i) The released default scale destroys the prediction on
-the authors' own data too — Barrier 3 is not specific to our CAR-NK encoder.
-(ii) Even at a repaired scale, Squidiff trails a per-gene Gaussian fit on
-the same pooled training data (7.24 vs 1.51) whose mean sits midway between
-the two days; per-gene mean correlation is a dead heat (0.975 vs 0.974).
-(iii) The VO task is not trivial — the day-0 resample scores 47.58, so the
-population genuinely moves — yet the moment-matched baseline wins there as
-well. The CAR-NK ordering therefore reflects what these distributional
-metrics reward (marginal moments), not a CAR-NK-specific or low-drift
-artefact; and because the upstream reproducibility material reports no
-quantitative metric (Supplementary Note 4), nothing upstream could have
-surfaced it. (iv) The structure-metric replication (Supplementary Note 11)
-shows the same marginal-vs-structure split holds here too, and more
-sharply: on VO, Squidiff beats every baseline on structure, not only the
-diagonal-covariance one.
-
----
-
-## Supplementary Note 9 | Uncertainty beyond training seed
-
-Source: `artifacts/evaluation_robustness/robustness.json`,
-`evaluation_robustness.py` (git commit `10e6d8435cdf`), on the same
-CAR-NK split as the main performance result (test population 4,668 cells,
-5 samples). Every population — the two baselines and each of the five
-independently trained Squidiff seeds at its validation-selected noise
-scale — is scored on the same held-out data by the same energy-distance
-function; only the resampling procedure varies row to row.
-
-**Same-distribution null band** (50 splits of the held-out population into
-random halves, scored against each other): energy distance mean 0.0266
-(95th percentile 0.0509); MMD (RBF, training bandwidth) mean 0.00035 (95th
-percentile 0.00090); per-gene mean correlation mean 0.9995 (5th percentile
-0.9989). Every reported energy distance in the main comparison (0.72 to
-1244) is one to five orders of magnitude above this floor.
-
-**Bootstrap 95% intervals for energy distance**, cell-level (200 resamples
-of individual cells) and sample-level (200 resamples of whole held-out
-biological samples, the more conservative unit):
-
-| Population | Estimate | Cell-level 95% CI | Sample-level 95% CI |
-|---|---|---|---|
-| Conditional-mean | 4.26 | [4.18, 4.38] | [3.93, 5.72] |
-| Last-observation (D14 resample) | 0.72 | [0.67, 0.80] | [0.71, 3.65] |
-| Squidiff, seed 13 | 28.72 | [26.78, 30.85] | [25.90, 32.32] |
-| Squidiff, seed 37 | 29.26 | [27.19, 31.37] | [26.30, 33.34] |
-| Squidiff, seed 73 | 24.90 | [23.04, 26.93] | [22.44, 28.30] |
-| Squidiff, seed 101 | 28.99 | [27.04, 30.94] | [25.88, 32.80] |
-| Squidiff, seed 137 | 27.28 | [25.47, 29.34] | [24.65, 31.52] |
-
-No Squidiff seed's sample-level interval overlaps the conditional-mean
-baseline's (nearest approach: seed 73's lower bound of 22.44 against the
-baseline's upper bound of 5.72); the same holds against last-observation.
-
-**Leave-one-held-out-sample-out**: recomputing energy distance with each of
-the five D21/D28 samples excluded in turn preserves the three-way ordering
-(conditional-mean 4.10–4.57; last-observation 0.73–1.35; every Squidiff
-seed 23.08–29.93) in all 25 (5 samples × 5 seeds) folds.
-
-**Baseline dispersion** (10 independent resampling draws at fixed data,
-varying only the resampling seed, not the training seed): conditional-mean
-4.263 ± 0.009; last-observation 0.776 ± 0.042. Both an order of magnitude
-below the 24.9–29.3 spread across Squidiff's five *training* seeds, so
-neither baseline's score is a lucky single draw.
-
----
-
-## Supplementary Table 4 | MMD bandwidth-sensitivity grid
-
-Source: `artifacts/evaluation_robustness/robustness.json`. Grid is the
-training-data median-heuristic bandwidth (35.39) scaled by {0.25, 0.5, 1,
-2, 4}; MMD (RBF) computed at each point for the two baselines and each
-Squidiff seed's regenerated validation-selected population.
-
-| Bandwidth | Conditional-mean | Last-observation | Squidiff (5 seeds, range) |
-|---|---|---|---|
-| 8.85 (0.25×) | 0.1103 | 0.0092 | 0.082–0.087 |
-| 17.70 (0.5×) | 0.1712 | 0.0170 | 0.127–0.141 |
-| 35.39 (1×, training) | 0.0577 | 0.0108 | 0.152–0.172 |
-| 70.79 (2×) | 0.0120 | 0.0035 | 0.144–0.164 |
-| 141.58 (4×) | 0.0027 | 0.0009 | 0.076–0.091 |
-
-At 0.25× and 0.5× bandwidth, every Squidiff seed scores *below* (better
-than) the conditional-mean baseline; at the training bandwidth and above,
-every seed scores above (worse than) it. The ordering is not a monotonic
-function of bandwidth and is not stable across this one-decade grid, so
-MMD is not used to support a performance claim in either direction in the
-main text (it is retained in Supplementary Table 3 as a descriptive value
-at the one bandwidth fixed on training data).
-
----
-
-## Supplementary Note 10 | Structure metrics: gene–gene correlation and rare-cluster recall
-
-Source: `artifacts/evaluation_robustness/robustness.json`. Neither energy
-distance nor per-gene mean correlation can penalize a sampler for missing
-gene–gene covariance; these two metrics can. Gene–gene correlation
-Frobenius distance is the Frobenius norm between the generated and
-held-out populations' own gene-by-gene Pearson correlation matrices (lower
-is better). Rare-cluster mass recall fits k-means (8 clusters) on the
-held-out population, marks clusters holding under 10% of held-out cells as
-rare, and reports the fraction of rare-cluster mass whose nearest centroid
-receives at least one generated cell (higher is better; 1.0 is perfect).
-
-| Population | Correlation Frobenius distance | Rare-cluster mass recall |
-|---|---|---|
-| Conditional-mean | 266.17 | 0.34 |
-| Last-observation (D14 resample) | 79.09 | 1.00 |
-| Squidiff, seed 13 | 145.44 | 1.00 |
-| Squidiff, seed 37 | 141.28 | 1.00 |
-| Squidiff, seed 73 | 131.16 | 0.93 |
-| Squidiff, seed 101 | 126.80 | 1.00 |
-| Squidiff, seed 137 | 144.83 | 0.93 |
-| Squidiff, mean ± s.d. | 137.90 ± 8.44 | 0.97 ± 0.04 |
-
-The conditional-mean baseline has zero off-diagonal correlation by
-construction, and scores worst on both structure metrics despite winning
-on energy distance and per-gene mean correlation. Squidiff beats it on
-correlation-matrix distance in all five seeds (137.9 vs 266.2, a wider
-relative margin than the energy-distance loss) and on rare-cluster recall
-in all five seeds (0.93–1.00 vs 0.34). Last-observation still wins on
-correlation-matrix distance — unsurprisingly, since it is real held-out-
-window-adjacent cells and so carries genuine correlation structure by
-construction, not by having learned it — and matches Squidiff on recall in
-three of five seeds. The reading in the main text: Squidiff loses the
-metrics the field would naturally report against a moment-matched sampler,
-and wins the one property that sampler cannot have by construction, against
-the baseline that actually shares its generative task.
-
----
-
-## Supplementary Note 11 | Structure metrics replicated on the authors' own released setting
-
-Source: `artifacts/positive_control/structure_metrics.json`,
-`positive_control_structure.py`. Same task, checkpoint and data as
-Supplementary Note 8 (released VO checkpoint, 6,838 cells, 596 genes,
-predicting day-1 from day-0); only the repaired noise scale (0.03, 3
-sampling seeds) is decoded here, since the released default already fails
-on every marginal metric on this data (Note 8) and its structure score
-would not change the reading. Two of the 596 released genes are exactly
-zero across the entire day-1 population; both structure metrics exclude
-genes with zero variance in the real population being scored against,
-since Pearson correlation is undefined for a constant variable (fixed in
-`correlation_frobenius_distance` after this run first surfaced it as NaN;
-the already-published CAR-NK numbers were checked and are unaffected,
-since their 500 HVG-selected genes contain none).
-
-| Condition | Correlation Frobenius distance | Rare-cluster mass recall |
-|---|---|---|
-| Squidiff, scale 0.03 (3 seeds) | 52.36 (51.4–53.8) | 1.000 |
-| Conditional-mean, pooled | 95.01 | 1.000 |
-| Last-observation, day-0 resample | 98.68 | 0.568 |
-| Oracle Gaussian (day-1 marginals) | 95.02 | 0.630 |
-
-Unlike CAR-NK, where Squidiff beat the diagonal-covariance baseline but
-still trailed the real-cell last-observation baseline on correlation
-distance, on VO Squidiff beats **every** baseline on **both** structure
-metrics, including last-observation and the oracle. The likely reason is
-structural, not a discrepancy between the two controls: CAR-NK's
-last-observation baseline is real day-14 cells, one step before the D21/D28
-cells being scored, from the same tissue and a temporally adjacent state,
-so it carries real structure that is still largely relevant. VO's
-last-observation baseline is real day-0 cells — a single, more homogeneous
-population — being scored against day-1, which the released data documents
-as three more heterogeneous cell types; day-0 cells resampled do not carry
-day-1's structure, which is consistent with their weak rare-cluster recall
-here (0.568) despite being real cells. Squidiff's structure recovery on VO
-is therefore not an artefact of one control being biologically easier than
-the other — CAR-NK and VO differ in how informative their respective
-"replay the last state" baseline is, not in whether Squidiff's structure
-result replicates.
+| GSE190976 | Gene Expression Omnibus accession GSE190976 |
+| Released Squidiff artefacts | https://doi.org/10.6084/m9.figshare.27948633 |
+| Existing derived-data record | https://doi.org/10.5281/zenodo.21510503 |
+| Audit code record | https://doi.org/10.5281/zenodo.21525939 |

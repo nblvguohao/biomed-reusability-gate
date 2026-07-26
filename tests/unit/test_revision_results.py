@@ -29,6 +29,10 @@ def _synthetic_root(tmp_path: Path) -> Path:
         root / "artifacts/evaluation_robustness/robustness.json",
         {"null_anchor": {"energy_distance": {"mean": 0.1}}},
     )
+    _write(
+        root / "artifacts/squidiff_sweep_lognorm/split_manifest.json",
+        {"train_times": [0, 7, 14], "test_times": [21, 28]},
+    )
     for name in ("early_d14", "late_d28"):
         _write(
             root / f"artifacts/cutoff_studies/{name}/cutoff_summary.json",
@@ -40,9 +44,7 @@ def _synthetic_root(tmp_path: Path) -> Path:
                 "per_seed": [
                     {
                         "seed": seed,
-                        "baselines": {
-                            "pooled_diagonal_gaussian": {"source": "uncorrected"}
-                        },
+                        "baselines": {"pooled_diagonal_gaussian": {"source": "uncorrected"}},
                     }
                     for seed in (13, 37, 73, 101, 137)
                 ],
@@ -60,17 +62,14 @@ def _synthetic_root(tmp_path: Path) -> Path:
                 "per_seed": [
                     {
                         "seed": seed,
-                        "baselines": {
-                            "pooled_diagonal_gaussian": {"source": "corrected"}
-                        },
+                        "baselines": {"pooled_diagonal_gaussian": {"source": "corrected"}},
                     }
                     for seed in (13, 37, 73, 101, 137)
                 ],
             },
         )
     _write(
-        root
-        / "artifacts/cutoff_studies/primary_d21_d28/posthoc_model_evaluation.json",
+        root / "artifacts/cutoff_studies/primary_d21_d28/posthoc_model_evaluation.json",
         {
             "cutoff": "primary_d21_d28",
             "expected_seeds": [13, 37, 73, 101, 137],
@@ -107,6 +106,10 @@ def test_revision_manifest_contains_all_cutoffs(tmp_path):
     }
     assert all(len(result["cutoffs"][name]["per_seed"]) == 5 for name in result["cutoffs"])
     assert "squidiff" in result["cutoffs"]["primary_d21_d28"]["per_seed"][0]
+    assert result["cutoffs"]["primary_d21_d28"]["split_manifest"] == {
+        "train_times": [0, 7, 14],
+        "test_times": [21, 28],
+    }
 
 
 def test_vo_is_explicitly_target_informed(tmp_path):
@@ -121,9 +124,7 @@ def test_posthoc_baseline_correction_overwrites_remote_value(tmp_path):
     result = consolidate(_synthetic_root(tmp_path))
 
     early = result["cutoffs"]["early_d14"]
-    assert early["per_seed"][0]["baselines"]["pooled_diagonal_gaussian"] == {
-        "source": "corrected"
-    }
+    assert early["per_seed"][0]["baselines"]["pooled_diagonal_gaussian"] == {"source": "corrected"}
     assert early["same_distribution_reference"]["repeats"] == 50
 
 

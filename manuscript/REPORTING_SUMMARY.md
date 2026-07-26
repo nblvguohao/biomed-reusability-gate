@@ -1,127 +1,119 @@
-# Nature Portfolio Reporting Summary
+# Nature Portfolio Reporting Summary — prepared answers
 
-Answers below are drafted to be transcribed into the official fillable
-Reporting Summary PDF from the journal's submission system (the form itself
-is a template Nature Portfolio provides; this file is not a substitute for
-it, just pre-written answers). Section numbering follows the standard
-template: Statistics, Software and code, Data, Field-specific reporting,
-Life sciences study design, Reporting for specific materials/systems/methods.
+These answers are prepared for transfer to the current Nature Portfolio
+Reporting Summary form. The study is a computational reanalysis of public data.
+It introduces no new intervention involving people, animals or biological
+materials.
 
-This is a computational reanalysis of previously published, publicly
-deposited data. No new wet-lab, animal, or human-subjects work was performed
-by the authors of this report; the underlying biological experiment (mouse
-CAR-NK infusion, GSE190976) was performed by Li et al. (ref. 5), and its own
-ethical approvals apply there, not here. Several template sections are
-therefore correctly answered "not applicable" — that is a true description
-of a reusability report, not a gap.
+## Statistics
 
----
+### Sample sizes
 
-## 1. Statistics
+The reused GSE190976 expression matrix contains 16,256 cells from 18 deposited
+samples. Temporal cutoffs were predeclared:
 
-For every reported panel and table, confirm or mark n/a:
+| Analysis | Training population | Test population | Interpretation |
+|---|---|---|---|
+| Early | D0 and D7: 7,378 cells from 9 samples | Primary D14: 4 samples; exploratory D21 and D28: 5 samples | D14 is the primary endpoint; later endpoints are exploratory. |
+| Primary | D0, D7 and D14: 11,588 cells from 13 samples | D21 and D28: 4,668 cells from 5 samples | Prespecified main analysis. |
+| Late | D0, D7, D14 and D21: 15,746 cells from 17 samples | D28: 510 cells from 1 sample | Descriptive only because the test endpoint contains one biological sample. |
 
-| Item | Status |
+Five independently initialized training runs were completed for each cutoff
+(seeds 13, 37, 73, 101 and 137). These runs quantify computational variability;
+they are not treated as independent biological samples. The public dataset
+fixed the available biological sample size, and no prospective power
+calculation was performed.
+
+### Data exclusions
+
+No deposited sample was removed. The analysis began from the expression matrix
+that passed the original study’s processing and quality-control workflow.
+Within each cutoff, the 500 genes with the largest training-set variance were
+retained. This is a train-fitted feature-selection rule, not a post hoc
+cell-exclusion rule.
+
+### Replication
+
+All 15 planned model-training runs completed successfully; no run is omitted
+on the basis of its metric value.
+Repeated seeds are computational replicates. Biological replication is
+represented by the deposited sample identifiers within each cutoff. The
+D28-only analysis has one biological test sample and is therefore reported
+descriptively, without population-level inference.
+
+### Randomization
+
+Biological samples were not randomly assigned because this is a retrospective
+computational analysis. Temporal membership deterministically defines each
+train and test split. Random-number seeds were fixed before model training,
+baseline sampling and same-distribution reference sampling.
+
+### Blinding
+
+Blinding was not applicable. Timepoint labels are required to define the
+prediction task, and all metrics are computed automatically from frozen arrays
+after generation. No investigator-selected outcome measurement or manual image
+assessment was performed.
+
+### Statistical analysis
+
+The study reports descriptive effect estimates rather than seed-based
+null-hypothesis tests. For each cutoff, individual seed values and mean ±
+standard deviation across five computational runs are shown. Biological sample
+counts are stated separately. The primary analysis also includes a repeated
+same-distribution reference and sample-level resampling checks. No P value or
+multiple-testing correction is reported.
+
+Metrics comprise multivariate energy distance; Pearson correlation between
+per-gene population means; raw and gene-count-normalized Frobenius distance
+between gene-correlation matrices; cluster-mass mean absolute error;
+Jensen–Shannon divergence; rare-mass recall; and rare-mass precision. Cluster
+sensitivity uses 6, 8, 10 and 12 clusters and rare-mass thresholds of 0.05,
+0.10 and 0.15. Mean-expression correlation is invariant only to a shared
+positive affine transformation, not to gene-specific transformations.
+
+## Software and code
+
+The audit code is archived at https://doi.org/10.5281/zenodo.21525939. The
+upstream Squidiff code is pinned to commit
+`abdfc27d84947dcccd745d1067c0840a41d32eb8` (release v1.0.8). Python, PyTorch,
+CUDA and analysis-library versions, GPU identity, execution commands, source
+hashes and wall times are recorded in the accompanying environment and cutoff
+provenance manifests. Machine-readable metric and figure manifests are included
+in the submission’s Source Data directory.
+
+## Data availability
+
+GSE190976 is available from the Gene Expression Omnibus. The released Squidiff
+checkpoint and training data are available from Figshare at
+https://doi.org/10.6084/m9.figshare.27948633. The existing derived-data archive
+is available at https://doi.org/10.5281/zenodo.21510503. Source data supporting
+the revised figures and the three-cutoff analysis are included with the
+submission and will be deposited with a versioned public release.
+
+## Life-sciences study design
+
+This report reuses a deposited mouse CAR-NK single-cell transcriptomic dataset.
+The authors performed no new animal procedure. Ethical approval and husbandry
+information for the experiment that generated GSE190976 are reported in the
+original publication and are not reassigned to this computational study.
+
+| Reporting category | Applicability |
 |---|---|
-| The exact sample size (n) for each experimental group/condition, given as a discrete number and unit of measurement | **Confirmed.** n = 16,256 cells total (GSE190976); train split 11,588 cells / 13 samples, held-out split 4,668 cells / 5 samples; n = 5 independently trained models (seeds 13, 37, 73, 101, 137) for every reported mean ± s.d. |
-| A statement on whether measurements were taken from distinct samples or whether the same sample was measured repeatedly | **Confirmed, distinct.** Each seed is an independently initialized and independently trained model; held-out cells are never reused across the metric computed for different seeds. |
-| The statistical test(s) used AND whether they are one- or two-sided | **Not applicable — no hypothesis test is reported.** All five seeds fall on the same side of both baselines on the marginal metrics (energy distance, per-gene mean correlation) and on the structure metrics (gene–gene correlation distance, rare-cluster recall); this is reported descriptively (mean ± s.d. across seeds; percentile bootstrap intervals; leave-one-sample-out folds) rather than via a significance test, per the statistics block in `manuscript/FIGURE_LEGENDS.md` and Supplementary Note 9. |
-| A description of all covariates tested | n/a — no covariate-adjusted model is used. |
-| A description of any assumptions or corrections, such as tests of normality and adjustment for multiple comparisons | n/a — no test performed, so no correction applies. |
-| A full description of the statistical parameters including central tendency and variation | **Confirmed.** Mean and standard deviation across 5 training seeds for every metric (Fig. 3c; full values in `artifacts/squidiff_seed_study/seed_study_metrics.json`), supplemented by: a same-distribution null band (metric between random halves of the held-out population, 50 splits); 200-resample percentile bootstrap 95% intervals at cell level and at held-out-sample level; leave-one-held-out-sample-out re-scoring (5 folds per seed); and 10-draw baseline-resampling dispersion at fixed data. Full values and methodology in Supplementary Note 9 and `artifacts/evaluation_robustness/robustness.json`. |
-| For null hypothesis testing, the test statistic and P value noted | n/a — no null hypothesis test performed (see above); uncertainty is reported via bootstrap intervals and a same-distribution reference band instead. |
-
-## 2. Software and code
-
-**Data collection.** No new data were collected for this report. The
-single-cell dataset (GSE190976) was generated and deposited by Li et al.
-(ref. 5); we downloaded it from GEO as-is.
-
-**Data analysis.**
-- Python 3.10.11 (production/GPU analysis, `--system-site-packages` venv
-  inheriting system CUDA PyTorch) and Python 3.11 (lint/type-check parity
-  environment).
-- PyTorch 2.11.0+cu128, CUDA 12.8, on an NVIDIA GeForce RTX 5070 Ti (17.1 GB
-  VRAM).
-- scanpy 1.11.5, anndata 0.11.4, numpy 2.2.6, scipy 1.15.3, scikit-learn
-  1.7.2, pandas 2.3.3.
-- Squidiff, pinned at upstream commit `abdfc27d84947dcccd745d1067c0840a41d32eb8`
-  (v1.0.8), with three compatibility patches applied
-  (`vendor/patches/squidiff/`, each with a regression test).
-- All custom analysis code is available at
-  https://github.com/nblvguohao/biomed-reusability-gate (archived via
-  Zenodo, DOI: 10.5281/zenodo.21525939, v1.0.1, published 2026-07-24,
-  verified resolving — supersedes the earlier v1.0.0 snapshot, which
-  predated the Phase 2 statistical-robustness work and the VO
-  structure-metric replication).
-
-## 3. Data
-
-Confirm the data availability policy has been followed: **Yes.** Reused
-public data (GSE190976) is cited to its accession; newly generated derived
-data (splits, model checkpoints, generated populations, metrics, figure
-source data) are deposited via Zenodo, DOI: 10.5281/zenodo.21510503
-(verified resolving — published record, CC BY 4.0), separate from the code
-archive above, per the Data availability statement in
-`reusability_report.md`.
-
-## 4. Field-specific reporting
-
-Select one: ☒ **Life sciences** ☐ Behavioural & social sciences
-☐ Ecological, evolutionary & environmental sciences
-
-## 5. Life sciences study design
-
-All studies must disclose on these points even when the disclosure is
-negative.
-
-| Item | Answer |
-|---|---|
-| **Sample size** | The CAR-NK dataset size (16,256 cells, 18 samples) was fixed by the original depositors (ref. 5); this report performs no new sample collection and therefore no sample-size power calculation. The number of independently trained model seeds (5) was chosen as a practical minimum for reporting a mean and spread across training runs, following standard practice for reproducibility/variance reporting in generative-model studies; no formal power calculation determined this number. |
-| **Data exclusions** | None. All cells passing the original depositors' quality control were used; no cells or samples were excluded by us. |
-| **Replication** | The central replication claim of this report *is* the five-seed study: five independently initialized and trained models were evaluated under identical protocol, data, and split, and all five agreed in direction (worse than the conditional-mean baseline on all three metrics, in all five seeds). All five attempts succeeded; none were excluded. |
-| **Randomization** | Not applicable in the sense of group allocation — there are no experimental groups to randomize. The train/held-out split is a **deliberately non-random**, sample-disjoint temporal split (train: pre-infusion/D7/D14; held out: D21/D28), chosen specifically to test extrapolation to unseen later timepoints rather than interpolation, and to guarantee zero sample overlap between train and test. |
-| **Blinding** | Not applicable. This is a fully computational reanalysis; there is no investigator-facing measurement step where blinding to group identity could affect the result — the split itself is defined deterministically by timepoint metadata already present in the public data. |
-
-## 6. Reporting for specific materials, systems and methods
-
-Mark "Involved in the study" only where true for *this* report (the
-computational reanalysis), not for the original biological experiment that
-generated GSE190976.
-
-| Materials & experimental systems | Involved? |
-|---|---|
-| Antibodies | Not involved |
-| Eukaryotic cell lines | Not involved |
-| Palaeontology and archaeology | Not involved |
-| **Animals and other organisms** | **Not involved in this study.** GSE190976's underlying mouse experiments were performed by the original authors (ref. 5); this report reuses only the deposited, de-identified single-cell expression matrices and does not involve any new animal procedure. Refer to ref. 5 for that study's own ethical approval (IACUC or equivalent). |
+| Antibodies | Not involved in this computational reanalysis |
+| Eukaryotic cell lines | Not newly used |
+| Animals and other organisms | No new procedure; public data only |
+| Human research participants | Not involved |
 | Clinical data | Not involved |
-| Dual use research of concern | Not involved |
+| Dual-use research of concern | Not involved |
 | Plants | Not involved |
-
-| Methods | Involved? |
-|---|---|
-| ChIP-seq | Not involved |
-| Flow cytometry | Not involved |
+| ChIP–seq | Not involved |
+| Flow cytometry | Not performed in this report |
 | MRI-based neuroimaging | Not involved |
 
----
+## Artificial-intelligence assistance
 
-## Notes for the author team
-
-- Content is complete and internally consistent with `RESULTS.md` and
-  `FIGURE_LEGENDS.md`. Author contributions (main text) are confirmed.
-- Both DOIs are minted and verified resolving: data (§3)
-  10.5281/zenodo.21510503 (single-author record — an intentional choice,
-  not an oversight), code (§2) 10.5281/zenodo.21525939 (v1.0.1, published
-  2026-07-24, current as of that date). Both Zenodo items are closed.
-- Confirm the funding-grant numbers are transcribed correctly into the
-  submission system's own funder-lookup field (some systems require
-  choosing a matched funder name from a dropdown rather than free text).
-- If NMI's specific Reporting Summary version differs in section wording
-  from the general Nature Portfolio template used here, map the answers
-  across by content, not by section number.
-- The original authors (He et al.) have not been contacted about this
-  reusability report. If NMI's editorial process expects notification or a
-  right-of-reply window, address that in the cover letter, not in this
-  form.
+Generative artificial intelligence assisted language editing, code support and
+preparation of submission materials. The authors reviewed the generated text
+and code, reran the analyses and remain responsible for the accuracy,
+originality and integrity of the work.

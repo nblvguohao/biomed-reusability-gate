@@ -90,12 +90,8 @@ def _metric_fields(metrics: dict[str, Any]) -> dict[str, Any]:
     return {
         "energy_distance": float(metrics["energy_distance"]),
         "mean_expression_correlation": float(metrics["mean_expression_correlation"]),
-        "correlation_frobenius_raw": float(
-            metrics["correlation_frobenius_raw"]
-        ),
-        "correlation_frobenius_normalized": float(
-            metrics["correlation_frobenius_normalized"]
-        ),
+        "correlation_frobenius_raw": float(metrics["correlation_frobenius_raw"]),
+        "correlation_frobenius_normalized": float(metrics["correlation_frobenius_normalized"]),
         "cluster_mass_mae": float(mass["cluster_mass_mae"]),
         "cluster_mass_jsd": float(mass["cluster_mass_jsd"]),
         "rare_mass_recall": float(mass["rare_mass_recall"]),
@@ -190,16 +186,20 @@ def _figure1(manifest: dict[str, Any]) -> Any:
         for index, day in enumerate(days):
             x = 0.11 + index * 0.20
             color = (
-                "#0072B2"
-                if day in train_times
-                else "#E69F00"
-                if day in test_times
-                else "#DDDDDD"
+                "#0072B2" if day in train_times else "#E69F00" if day in test_times else "#DDDDDD"
             )
             ax_b.scatter(x, y, s=28, color=color, edgecolor="black", linewidth=0.4)
             ax_b.text(x, y - 0.08, f"D{day}", ha="center")
-        ax_b.text(0.0, y, CUTOFF_LABELS[cutoff_name].replace("\n", " "), va="center")
-    ax_b.text(0.12, 0.02, "blue, train only; ochre, scored targets", ha="left")
+        ax_b.text(
+            0.11,
+            y + 0.085,
+            CUTOFF_LABELS[cutoff_name].replace("\n", " • "),
+            va="bottom",
+            ha="left",
+            fontsize=5.8,
+            fontweight="bold",
+        )
+    ax_b.text(0.11, 0.01, "blue, train only; ochre, scored targets", ha="left")
 
     _panel_label(ax_c, "c")
     ax_c.set_title("Operations by information set", loc="left")
@@ -211,21 +211,17 @@ def _figure1(manifest: dict[str, Any]) -> Any:
     )
     test_ops = ("generation count", "metric scoring", "reference splits")
     ax_c.add_patch(
-        mpl.patches.Rectangle(
-            (0.03, 0.48), 0.94, 0.42, facecolor="#E6F2F8", edgecolor="#0072B2"
-        )
+        mpl.patches.Rectangle((0.03, 0.48), 0.94, 0.42, facecolor="#E6F2F8", edgecolor="#0072B2")
     )
     ax_c.text(0.07, 0.84, "Training information only", fontweight="bold")
     for index, item in enumerate(train_ops):
         ax_c.text(0.08, 0.76 - index * 0.075, f"• {item}")
     ax_c.add_patch(
-        mpl.patches.Rectangle(
-            (0.03, 0.08), 0.94, 0.30, facecolor="#FFF2D8", edgecolor="#E69F00"
-        )
+        mpl.patches.Rectangle((0.03, 0.10), 0.94, 0.26, facecolor="#FFF2D8", edgecolor="#E69F00")
     )
-    ax_c.text(0.07, 0.32, "Target information", fontweight="bold")
+    ax_c.text(0.07, 0.31, "Target information", fontweight="bold")
     for index, item in enumerate(test_ops):
-        ax_c.text(0.08, 0.24 - index * 0.075, f"• {item}")
+        ax_c.text(0.08, 0.235 - index * 0.06, f"• {item}")
     return figure
 
 
@@ -239,20 +235,30 @@ def _figure2(manifest: dict[str, Any]) -> Any:
     ax_a, ax_b, ax_c, ax_d = axes.ravel()
 
     _panel_label(ax_a, "a")
-    ax_a.set_title("Released checkpoint audit", loc="left")
     ax_a.set_axis_off()
+    ax_a.text(
+        0.03,
+        0.96,
+        "Released checkpoint audit",
+        fontsize=7,
+        fontweight="bold",
+        va="top",
+    )
     checkpoint_rows = (
         ("State tensors", checkpoint["checkpoint_info"]["n_tensors"]),
         ("Parameters", f"{checkpoint['checkpoint_info']['n_parameters'] / 1e6:.1f} M"),
-        ("Missing / unexpected keys", (
-            f"{checkpoint['load_state_dict']['n_missing']} / "
-            f"{checkpoint['load_state_dict']['n_unexpected']}"
-        )),
+        (
+            "Missing / unexpected keys",
+            (
+                f"{checkpoint['load_state_dict']['n_missing']} / "
+                f"{checkpoint['load_state_dict']['n_unexpected']}"
+            ),
+        ),
         ("Finite generated values", str(checkpoint["sampling"]["finite"])),
         ("Energy distance", f"{checkpoint['sampling']['energy_distance']:.2f}"),
     )
     for index, (label, value) in enumerate(checkpoint_rows):
-        y = 0.84 - index * 0.16
+        y = 0.76 - index * 0.16
         ax_a.text(0.03, y, label)
         ax_a.text(0.97, y, value, ha="right", fontweight="bold")
         ax_a.plot([0.03, 0.97], [y - 0.06, y - 0.06], color="#DDDDDD", lw=0.5)
@@ -338,11 +344,7 @@ def _plot_metric(
     for cutoff_index, cutoff_name in enumerate(CUTOFF_ORDER):
         cutoff_rows = [row for row in rows if row["cutoff"] == cutoff_name]
         for group, offset in zip(groups, offsets, strict=True):
-            values = [
-                float(row[metric])
-                for row in cutoff_rows
-                if _display_group(row) == group
-            ]
+            values = [float(row[metric]) for row in cutoff_rows if _display_group(row) == group]
             if not values:
                 continue
             method = "Squidiff" if group.startswith("Squidiff") else group
@@ -375,7 +377,7 @@ def _plot_metric(
     axis.set_xticks(range(3), [CUTOFF_LABELS[value] for value in CUTOFF_ORDER])
     axis.set_ylabel(ylabel)
     direction = "higher is better" if higher else "lower is better"
-    axis.text(0.98, 0.98, direction, transform=axis.transAxes, ha="right", va="top")
+    axis.set_title(direction, loc="right", fontsize=5.8, pad=2)
     _clean_axis(axis)
 
 
@@ -393,9 +395,7 @@ def _plot_rare_sensitivity(axis: Any, rows: list[dict[str, Any]]) -> None:
                 float(setting["rare_mass_recall"])
             )
     for method in ("Squidiff", "Temporal factor Gaussian"):
-        thresholds = sorted(
-            threshold for candidate, threshold in values if candidate == method
-        )
+        thresholds = sorted(threshold for candidate, threshold in values if candidate == method)
         if not thresholds:
             continue
         means = [np.mean(values[(method, threshold)]) for threshold in thresholds]
@@ -492,14 +492,61 @@ def make_all_figures(
     """Render all main figures and a complete machine-readable source file."""
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = figure3_source_rows(manifest)
+    audit = manifest["release_audit"]
+    preprocessing_rows = []
+    for condition, block in audit["preprocessing_ab"]["conditions"].items():
+        for entry in block["per_budget"]:
+            preprocessing_rows.append(
+                {
+                    "condition": condition,
+                    "training_steps": entry["steps"],
+                    "energy_distance": entry["pooled_energy_distance"],
+                }
+            )
+    simulation = audit["simulated_benchmark"]["preprocessing_degeneracy"]
+    figure1_cutoffs = {}
+    for cutoff_name in CUTOFF_ORDER:
+        cutoff = manifest["cutoffs"][cutoff_name]
+        figure1_cutoffs[cutoff_name] = {
+            "train_times": cutoff.get("train_times"),
+            "test_times": cutoff.get("test_times"),
+        }
     source = {
         "schema_version": "1.0",
         "source_manifest": "artifacts/revision_results/revision_results.json",
+        "figure1_cutoffs": figure1_cutoffs,
+        "figure2": {
+            "released_checkpoint": {
+                "n_tensors": audit["released_checkpoint"]["checkpoint_info"]["n_tensors"],
+                "n_parameters": audit["released_checkpoint"]["checkpoint_info"]["n_parameters"],
+                "n_missing_keys": audit["released_checkpoint"]["load_state_dict"]["n_missing"],
+                "n_unexpected_keys": audit["released_checkpoint"]["load_state_dict"][
+                    "n_unexpected"
+                ],
+                "finite_generated_values": audit["released_checkpoint"]["sampling"]["finite"],
+                "energy_distance": audit["released_checkpoint"]["sampling"]["energy_distance"],
+            },
+            "preprocessing_rows": preprocessing_rows,
+            "simulation_rows": [
+                {
+                    "stage": stage,
+                    "silhouette": simulation[stage]["silhouette"],
+                }
+                for stage in ("raw simulation", "after normalize + log1p")
+            ],
+            "latent_noise_rows": [
+                {
+                    "scale": entry["scale"],
+                    "energy_distance": entry["pooled_energy_distance"],
+                    "is_default": float(entry["scale"])
+                    == float(audit["latent_noise_sensitivity"]["upstream_default_scale"]),
+                }
+                for entry in audit["latent_noise_sensitivity"]["scales"]
+            ],
+        },
         "figure3_rows": rows,
         "vo_interpretation": manifest["vo_sanity_check"]["interpretation"],
-        "vo_supports_generalization": manifest["vo_sanity_check"][
-            "supports_generalization"
-        ],
+        "vo_supports_generalization": manifest["vo_sanity_check"]["supports_generalization"],
         "statistics": {
             "n_definition": "five independently trained computational seeds",
             "center": "arithmetic mean across seeds",

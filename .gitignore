@@ -11,6 +11,8 @@ eggs/
 # Virtual environments
 .venv/
 .venv310/
+submission_package_nmi/
+submission_package_nmi.zip
 venv/
 env/
 

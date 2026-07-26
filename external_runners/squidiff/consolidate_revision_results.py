@@ -73,10 +73,10 @@ def _merge_primary(
     robustness: dict[str, Any],
     baseline_posthoc: dict[str, Any],
     model_posthoc: dict[str, Any],
+    split_manifest: dict[str, Any] | None,
 ) -> dict[str, Any]:
     baselines = {
-        entry["seed"]: entry.get("baselines", {})
-        for entry in baseline_posthoc["per_seed"]
+        entry["seed"]: entry.get("baselines", {}) for entry in baseline_posthoc["per_seed"]
     }
     per_seed = model_posthoc["per_seed"]
     for entry in per_seed:
@@ -92,13 +92,12 @@ def _merge_primary(
         "completed_seeds": model_posthoc["completed_seeds"],
         "complete": model_posthoc["complete"],
         "per_seed": per_seed,
-        "same_distribution_reference": baseline_posthoc[
-            "same_distribution_reference"
-        ],
+        "same_distribution_reference": baseline_posthoc["same_distribution_reference"],
         "posthoc_evaluation": baseline_posthoc,
         "posthoc_model_evaluation": model_posthoc,
         "legacy_seed_study": seed_study,
         "robustness": robustness,
+        "split_manifest": split_manifest,
     }
 
 
@@ -111,23 +110,19 @@ def consolidate(
     robustness_path = root / "artifacts/evaluation_robustness/robustness.json"
     early_path = root / "artifacts/cutoff_studies/early_d14/cutoff_summary.json"
     late_path = root / "artifacts/cutoff_studies/late_d28/cutoff_summary.json"
-    primary_posthoc_path = (
-        root / "artifacts/cutoff_studies/primary_d21_d28/posthoc_evaluation.json"
-    )
+    primary_posthoc_path = root / "artifacts/cutoff_studies/primary_d21_d28/posthoc_evaluation.json"
     primary_model_posthoc_path = (
-        root
-        / "artifacts/cutoff_studies/primary_d21_d28/posthoc_model_evaluation.json"
+        root / "artifacts/cutoff_studies/primary_d21_d28/posthoc_model_evaluation.json"
     )
     early_posthoc_path = root / "artifacts/cutoff_studies/early_d14/posthoc_evaluation.json"
     late_posthoc_path = root / "artifacts/cutoff_studies/late_d28/posthoc_evaluation.json"
+    primary_split_path = root / "artifacts/squidiff_sweep_lognorm/split_manifest.json"
     early_split_path = root / "artifacts/cutoff_studies/early_d14/split_manifest.json"
     late_split_path = root / "artifacts/cutoff_studies/late_d28/split_manifest.json"
     vo_distribution_path = root / "artifacts/positive_control/positive_control_metrics.json"
     vo_structure_path = root / "artifacts/positive_control/structure_metrics.json"
     released_path = root / "artifacts/released_checkpoint/released_checkpoint_check.json"
-    preprocessing_path = (
-        root / "artifacts/squidiff_latent_extrap_ab/preprocessing_ab_metrics.json"
-    )
+    preprocessing_path = root / "artifacts/squidiff_latent_extrap_ab/preprocessing_ab_metrics.json"
     noise_path = root / "artifacts/squidiff_latent_extrap/latent_noise_scale_sweep.json"
     simulation_path = root / "artifacts/squidiff_reproduction/reproduction_metrics.json"
 
@@ -155,6 +150,7 @@ def consolidate(
                 robustness,
                 primary_posthoc,
                 primary_model_posthoc,
+                _optional_load(primary_split_path),
             ),
             "early_d14": early,
             "late_d28": late,
@@ -205,6 +201,7 @@ def consolidate(
                     preprocessing_path,
                     noise_path,
                     simulation_path,
+                    primary_split_path,
                     early_split_path,
                     late_split_path,
                 )
