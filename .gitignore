@@ -58,3 +58,8 @@ zenodo_upload/
 # Containers
 *.sif
 *.simg
+
+# External two-hop credentials and generated transfer staging
+LAB_HOST
+A100
+remote_staging/
