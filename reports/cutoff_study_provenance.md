@@ -71,6 +71,8 @@ rejects any cutoff for which the expected and completed seed lists differ.
 
 | Artefact | SHA-256 |
 |---|---|
+| Early D14 cutoff archive | `8fe82536c9b1c99b20842a074d092afaf765d66ca1043b5dcef9d2abf4307ff2` |
+| Late D28 cutoff archive | `619f5fa699eb035dca768c52c14151f3fd7294a6158ba4e5519c7d7c1e43756d` |
 | Early D14 post-hoc evaluation | `dead36212d9ffc450cc3093b1ae32f4ef10fe870374428c7921a4e88dbac2d5d` |
 | Late D28 post-hoc evaluation | `d56ea9a760d14ce7eba53a84c578a62b83fc37d87bb60cc4fb0f50f7067439d3` |
 | Consolidated three-cutoff manifest | `44f4304ea973740b5e23028dd88d22c38e710ac5eac47b723ee20d6dbda60c26` |
