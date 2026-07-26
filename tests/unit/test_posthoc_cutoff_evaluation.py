@@ -14,7 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "external_runners" / "squidiff"))
 
 from cutoff_study import load_cutoff_config  # noqa: E402
-from posthoc_cutoff_evaluation import evaluate_cutoff  # noqa: E402
+from posthoc_cutoff_evaluation import (  # noqa: E402
+    evaluate_cutoff,
+    evaluate_generated_models,
+)
 
 CONFIG = ROOT / "configs" / "cutoff_studies.yaml"
 
@@ -98,3 +101,23 @@ def test_posthoc_result_roundtrips_as_json(tmp_path):
     loaded = json.loads(destination.read_text(encoding="utf-8"))
     assert loaded["input_sha256"]["train_h5ad"]
     assert loaded["input_sha256"]["test_h5ad"]
+
+
+def test_cached_generated_populations_receive_current_metric_schema(tmp_path):
+    train_path, test_path = _write_split(tmp_path / "split")
+    config = load_cutoff_config(CONFIG, "early_d14")
+    generated = np.random.RandomState(9).normal(7.5, 0.4, size=(48, 14))
+    generated_path = tmp_path / "seed_13.npy"
+    np.save(generated_path, generated)
+
+    result = evaluate_generated_models(
+        config,
+        train_path,
+        test_path,
+        generated={13: (0.03, generated_path)},
+    )
+
+    metrics = result["per_seed"][0]["squidiff"]["scale_0.03"]["primary"]
+    assert "correlation_frobenius_normalized" in metrics
+    assert "cluster_mass_sensitivity" in metrics
+    assert result["per_seed"][0]["generated_sha256"]

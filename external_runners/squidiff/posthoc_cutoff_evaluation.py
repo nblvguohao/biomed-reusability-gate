@@ -186,6 +186,84 @@ def evaluate_cutoff(
     }
 
 
+def evaluate_generated_models(
+    config: CutoffRunConfig,
+    train_path: Path,
+    test_path: Path,
+    *,
+    generated: dict[int, tuple[float, Path]],
+) -> dict[str, Any]:
+    """Apply the current metric schema to cached model-generated populations."""
+    import anndata as ad
+
+    if set(generated) != set(config.seeds) and not set(generated).issubset(config.seeds):
+        raise ValueError("generated populations contain a non-predeclared seed")
+    train_ad = ad.read_h5ad(train_path)
+    test_ad = ad.read_h5ad(test_path)
+    train, test = _dense(train_ad), _dense(test_ad)
+    test_times = test_ad.obs["timepoint_numeric"].to_numpy()
+
+    from reuse_gate.metrics.distribution import median_pairwise_distance
+
+    bandwidth = median_pairwise_distance(train)
+    timepoints = sorted(int(value) for value in np.unique(test_times))
+    counts = {value: int((test_times == value).sum()) for value in timepoints}
+    per_seed = []
+    for seed, (scale, path) in sorted(generated.items()):
+        values = np.asarray(np.load(path), dtype=np.float32)
+        if values.shape != test.shape:
+            raise ValueError(
+                f"generated shape for seed {seed} is {values.shape}, expected {test.shape}"
+            )
+        cursor = 0
+        populations = {}
+        for timepoint in timepoints:
+            stop = cursor + counts[timepoint]
+            populations[timepoint] = values[cursor:stop]
+            cursor = stop
+        per_seed.append(
+            {
+                "seed": seed,
+                "selected_or_fixed_scales": [scale],
+                "generated_sha256": _sha256(path),
+                "squidiff": {
+                    f"scale_{scale:g}": _score_generated(
+                        test,
+                        test_times,
+                        populations,
+                        bandwidth,
+                        config,
+                    )
+                },
+            }
+        )
+    return {
+        "schema_version": "1.0",
+        "cutoff": config.name,
+        "purpose": "apply the current metric schema to cached model populations",
+        "expected_seeds": sorted(generated),
+        "completed_seeds": [entry["seed"] for entry in per_seed],
+        "complete": len(per_seed) == len(generated),
+        "input_sha256": {
+            "train_h5ad": _sha256(train_path),
+            "test_h5ad": _sha256(test_path),
+        },
+        "mmd_bandwidth_fitted_on_training": bandwidth,
+        "per_seed": per_seed,
+    }
+
+
+def _parse_generated(values: list[str]) -> dict[int, tuple[float, Path]]:
+    parsed = {}
+    for value in values:
+        try:
+            seed_text, scale_text, path_text = value.split(":", maxsplit=2)
+        except ValueError as exc:
+            raise ValueError("--generated must use SEED:SCALE:PATH") from exc
+        parsed[int(seed_text)] = (float(scale_text), Path(path_text))
+    return parsed
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=REPO / "configs/cutoff_studies.yaml")
@@ -201,16 +279,32 @@ def main() -> None:
         dest="baselines",
     )
     parser.add_argument("--reference-splits", type=int, default=50)
+    parser.add_argument(
+        "--generated",
+        action="append",
+        default=[],
+        metavar="SEED:SCALE:PATH",
+        help="score cached model populations instead of baselines",
+    )
     args = parser.parse_args()
 
-    result = evaluate_cutoff(
-        load_cutoff_config(args.config, args.name),
-        args.train,
-        args.test,
-        seeds=tuple(args.seed) if args.seed else None,
-        baseline_names=tuple(args.baselines) if args.baselines else ALL_BASELINES,
-        reference_splits=args.reference_splits,
-    )
+    config = load_cutoff_config(args.config, args.name)
+    if args.generated:
+        result = evaluate_generated_models(
+            config,
+            args.train,
+            args.test,
+            generated=_parse_generated(args.generated),
+        )
+    else:
+        result = evaluate_cutoff(
+            config,
+            args.train,
+            args.test,
+            seeds=tuple(args.seed) if args.seed else None,
+            baseline_names=tuple(args.baselines) if args.baselines else ALL_BASELINES,
+            reference_splits=args.reference_splits,
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2), encoding="utf-8")
 
