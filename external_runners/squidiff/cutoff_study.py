@@ -358,15 +358,14 @@ def _score_generated(
     }
 
 
-def _build_baselines(
+def _baseline_populations(
     train: npt.NDArray[Any],
     train_times: npt.NDArray[Any],
-    test: npt.NDArray[Any],
     test_times: npt.NDArray[Any],
-    bandwidth: float,
     config: CutoffRunConfig,
     seed: int,
-) -> dict[str, Any]:
+) -> dict[str, dict[int, npt.NDArray[Any]]]:
+    """Generate all baseline populations using only the configured train window."""
     from reuse_gate.models.temporal_baselines import (
         conditional_mean_sampler,
         fit_temporal_factor_gaussian,
@@ -402,7 +401,7 @@ def _build_baselines(
         chosen = rng.choice(latest.shape[0], n_cells, replace=True)
         generated["last_observation_resample"][timepoint] = latest[chosen]
         generated["pooled_diagonal_gaussian"][timepoint] = conditional_mean_sampler(
-            latest,
+            train,
             n_cells,
             np.random.RandomState(seed + 100 + offset),
         )
@@ -418,6 +417,25 @@ def _build_baselines(
             n_samples=n_cells,
             rng=np.random.RandomState(seed + 300 + offset),
         )
+    return generated
+
+
+def _build_baselines(
+    train: npt.NDArray[Any],
+    train_times: npt.NDArray[Any],
+    test: npt.NDArray[Any],
+    test_times: npt.NDArray[Any],
+    bandwidth: float,
+    config: CutoffRunConfig,
+    seed: int,
+) -> dict[str, Any]:
+    generated = _baseline_populations(
+        train,
+        train_times,
+        test_times,
+        config,
+        seed,
+    )
     return {
         name: _score_generated(
             test,

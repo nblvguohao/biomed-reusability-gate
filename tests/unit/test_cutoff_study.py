@@ -13,7 +13,11 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "external_runners" / "squidiff"))
 
-from cutoff_study import load_cutoff_config, prepare_cutoff_data  # noqa: E402
+from cutoff_study import (  # noqa: E402
+    _baseline_populations,
+    load_cutoff_config,
+    prepare_cutoff_data,
+)
 
 CONFIG = ROOT / "configs" / "cutoff_studies.yaml"
 
@@ -31,6 +35,14 @@ def test_late_scale_selection_uses_training_times_only():
 
     assert set(config.validation_triplet or ()).issubset(config.train_times)
     assert set(config.test_times).isdisjoint(config.validation_triplet or ())
+
+
+def test_primary_config_supports_posthoc_task_aligned_baselines():
+    config = load_cutoff_config(CONFIG, "primary_d21_d28")
+
+    assert config.direction_times == (7, 14)
+    assert config.primary_test_times == (21, 28)
+    assert set(config.validation_triplet or ()).issubset(config.train_times)
 
 
 def test_released_training_configuration_is_fixed():
@@ -80,3 +92,26 @@ def test_prepare_cutoff_fits_features_on_training_cells_only(tmp_path):
     assert set(manifest["train_sample_ids"]).isdisjoint(manifest["test_sample_ids"])
     assert Path(prepared.train_path).exists()
     assert Path(prepared.test_path).exists()
+
+
+def test_pooled_diagonal_baseline_uses_the_full_training_window():
+    config = load_cutoff_config(CONFIG, "early_d14")
+    train = np.vstack(
+        [
+            np.zeros((100, 2), dtype=np.float64),
+            np.full((100, 2), 10.0, dtype=np.float64),
+        ]
+    )
+    train_times = np.asarray([0] * 100 + [7] * 100)
+    test_times = np.asarray([14] * 4_000)
+
+    populations = _baseline_populations(
+        train,
+        train_times,
+        test_times,
+        config,
+        seed=13,
+    )
+    pooled = populations["pooled_diagonal_gaussian"][14]
+
+    np.testing.assert_allclose(pooled.mean(axis=0), train.mean(axis=0), atol=0.15)
